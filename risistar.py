@@ -220,8 +220,9 @@ class Player:
                 self.planets = []
                 for p in ps:
                     planet = planetNameParser.findall(str(p))
-                    self.planets.append(Planet(p.attrs['value'], planet[0][0], [int(x) for x in planet[0][1].split(":")], self))
-                    p.scan()
+                    pl = Planet(p.attrs['value'], planet[0][0], [int(x) for x in planet[0][1].split(":")], self)
+                    self.planets.append(pl)
+                    pl.scan()
 
 
 
