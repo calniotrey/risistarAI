@@ -15,6 +15,7 @@ session = requests.session()
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
 buildingNameParser = re.compile(r'''\A([^\(]+)(?:\(.* (\d*))?''')
 ressourcesParser = re.compile(r'''(\d+) (\w+);''')
+energyParser = re.compile(r'''(-?\d+)./.(\d+)''')
 
 class Request:
     def __init__(self, url, payload):
@@ -118,6 +119,8 @@ class Planet:
         self.deut = None
         self.deutStorage = None
         self.deutProduction = None
+        self.energy = None
+        self.energyStorage = None
         self.lastExtracedInfosDate = None
     
     def upgradableBuildings(self, ressources):
@@ -169,8 +172,10 @@ class Planet:
         self.metal = float(soup.find(id="current_metal").attrs['data-real'])
         self.crystal = float(soup.find(id="current_crystal").attrs['data-real'])
         deutTd = soup.find(id="current_deuterium")
-        energySpan = deutTd.nextSibling.span
-        
+        energyText = deutTd.nextSibling.span.text #-40 / 0 for example
+        e = energyParser.findall(energyText)
+        self.energy = int(e[0][0])
+        self.energyStorage = int(e[0][1])
         self.deut = float(deutTd.attrs['data-real'])
         self.metalStorage = float(soup.find(id="max_metal").text.replace(".", ""))
         self.crystalStorage = float(soup.find(id="max_crystal").text.replace(".", ""))
@@ -223,27 +228,3 @@ class Player:
                     pl = Planet(p.attrs['value'], planet[0][0], [int(x) for x in planet[0][1].split(":")], self)
                     self.planets.append(pl)
                     pl.scan()
-
-
-
-def lancer_roulotte():
-    pseudo = input()
-    mdp = input()
-    minutesParser = re.compile("Temps restant avant attaque : (\d*)min")
-    secondesParser = re.compile("Temps restant avant attaque : (\d*)sec")
-    while True:
-        r = attaque_planetaire(pseudo, mdp)
-        r = r.content.decode()
-        tm = minutesParser.findall(r)
-        ts = secondesParser.findall(r)
-        if tm != []:
-            t = int(tm[0])*60
-        elif ts != []:
-            t = int(ts[0])+1
-        else:
-            t = 60*60
-        print(t)
-        time.sleep(t)
-
-    
-    
