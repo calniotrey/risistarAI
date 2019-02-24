@@ -21,7 +21,10 @@ ressourcesParser = re.compile(r'''(\d+) (\w+);''')
 energyParser = re.compile(r'''(-?\d+)./.(\d+)''')
 
 def log(planet, str):
-    print(time.strftime("%H:%M:%S"), " [", planet.id, "] ", str, sep='')
+    if planet != None:
+        print(time.strftime("%H:%M:%S"), " [", planet.id, "] ", str, sep='')
+    else:
+        print(time.strftime("%H:%M:%S"), " [   ] ", str, sep='')
 
 class Request:
     def __init__(self, url, payload):
@@ -75,7 +78,15 @@ class IA:
             timeToSleep = self.h[0].t - time.time()
             if timeToSleep > 0:
                 time.sleep(timeToSleep)
-            
+
+    def execRequest(self, req):
+        req.connect()
+        if """var loginError = "Votre session a expir""" in req.content:
+            #if we were disconnected we will try to reconnect once
+            log(None, "Reconnecting")
+            self.player.connexion()
+        req.connect()
+        self.player.lastRequest = req
 
 class BuildingTask(Task):
     def __init__(self, t, bat):
@@ -86,16 +97,6 @@ class BuildingTask(Task):
         self.bat.upgrade()
         log(self.bat.planet, "Building " + self.bat.type + " to level " + str(self.bat.level + 1) + " in " + str(self.bat.upgradeTime))
         self.bat.planet.player.ia.addTask(PlanningTask(time.time() + self.bat.upgradeTime, self.bat.planet))
-
-# class PlanBuildingTask(Task):
-#     def __init__(self, t, planet):
-#         self.t = t
-#         self.planet = planet
-#
-#     def execute(self):
-#         self.planet.scan()
-#         t = self.planet.planBuilding()
-#         log(self.planet, "Planning" + t.bat.type + "to level" + str(t.bat.level + 1) + "in" + str(t.t - time.time()))
 
 class PlanningTask(Task):
     def __init__(self, t, planet):
@@ -135,8 +136,7 @@ class Building:
         if self.id != None:
             payload = {'cmd': 'insert', 'building': self.id}
             reqB = Request(buildingPage + "&cp=" + self.planet.id, payload)
-            reqB.connect()
-            self.lastRequest = reqB
+            self.planet.player.ia.execRequest(reqB)
         
 class Planet:
     def __init__(self, id, name, position, player):
@@ -215,8 +215,7 @@ class Planet:
     
     def scan(self):
         reqB = Request(buildingPage + "&cp=" + self.id, {})
-        reqB.connect()
-        self.player.lastRequest = reqB
+        self.player.ia.execRequest(reqB)
         soup = BeautifulSoup(reqB.content, "html.parser")
         #parse all available buildings
         bats = soup.find(id="content").find_all("div", recursive=False)
@@ -287,9 +286,7 @@ class Planet:
         self.metalProduction = float(metalProductionParser.findall(script)[0]) / 3600
         self.crystalProduction = float(crystalProductionParser.findall(script)[0]) / 3600
         self.deutProduction = float(deutProductionParser.findall(script)[0]) / 3600
-        
-    
-    
+
     def expectedRessources(self, timeTarget=time.time(), takeStorageInAccount=True):
         t = (timeTarget - self.lastExtracedInfosDate) / 3600
         em = self.metal + self.metalProduction * t
@@ -319,6 +316,11 @@ class Player:
         connexionRequest = Request(mainURL + 'page=login', payload)
         connexionRequest.connect()
         self.lastRequest = connexionRequest
+        if """var loginError = "Combinaison login""" in connexionRequest.content:
+            log(None, "Login/Password incorrect")
+            sys.exit("Login/Password incorrect")
+        else:
+            log(None, "Connected")
 
     def extractInfos(self, request=None, darkMatter=False, planets=True):
         if request == None:
