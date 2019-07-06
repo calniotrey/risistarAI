@@ -12,10 +12,9 @@ Second line : password
 Then you can write some other informations (like the email used and so on), it won't be used
 
 ## Startup :
-Execute the code
-
-## Create new AI :
-ia = IA(pseudo, password)
+`python start.py`
+or
+`python3 start.py`
 
 ## Classes :
 IA : has some informations about the tasks that should be carried (like building)  
