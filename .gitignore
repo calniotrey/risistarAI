@@ -1,1 +1,3 @@
 secret.txt
+__pycache__/
+*.html
