@@ -1,6 +1,7 @@
 import requests
 import sys, time, re
 import heapq
+import threading
 from bs4 import BeautifulSoup
 
 file = open("secret.txt")
@@ -10,6 +11,8 @@ file.close()
 
 mainURL = 'http://risistar.fr/index.php?'
 buildingPage = 'http://risistar.fr/game.php?page=buildings'
+overviewPage = 'http://risistar.fr/game.php?page=overview'
+renamingPage = 'http://risistar.fr/game.php?page=overview&mode=rename&name='
 session = requests.session()
 
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
@@ -37,7 +40,7 @@ class Request:
     def connect(self):
         self.response = session.post(self.url, data=self.payload)
         self.date = time.time()
-        self.content = self.response.content.decode().replace("\n", "").replace("\t", "")
+        self.content = self.response.content.decode().replace("\n", "").replace("\t", "")   
         return self.response
     
     def saveToFile(self, filePath):
@@ -61,8 +64,10 @@ class IA:
         self.player.connexion()
         self.player.extractInfos(planets=True)
         self.h = []   #liste triée croissante selon le temps planifié
+        self._stop = False
         for p in self.player.planets:
-            self.addTask(PlanningTask(time.time(), p))
+            if not p.isMoon:
+                self.addTask(PlanningTask(time.time(), p))
     
     def addTask(self, t):
         heapq.heappush(self.h, t)
@@ -72,12 +77,20 @@ class IA:
             taskToExecute = heapq.heappop(self.h)
             taskToExecute.execute()
 
-    def permaRun(self):
-        while True:
+    def permaRun(self, longestWait=10):
+        while not self._stop:
             self.run()
             timeToSleep = self.h[0].t - time.time()
             if timeToSleep > 0:
-                time.sleep(timeToSleep)
+                time.sleep(min(timeToSleep, longestWait))
+        log(None, "Stopped")
+    
+    def permaRunDetached(self):
+        threading.Thread(target=self.permaRun).start()
+    
+    def stop(self):
+        log(None, "Stopping")
+        self._stop = True
 
     def execRequest(self, req):
         req.connect()
@@ -85,7 +98,7 @@ class IA:
             #if we were disconnected we will try to reconnect once
             log(None, "Reconnecting")
             self.player.connexion()
-        req.connect()
+            req.connect()
         self.player.lastRequest = req
 
 class BuildingTask(Task):
@@ -106,16 +119,23 @@ class PlanningTask(Task):
     def execute(self):
         log(self.planet, "Scanning planet")
         self.planet.scan()
-        log(self.planet, "Done scanning planet")
+        if self.planet.sizeUsed is None:
+            log(self.planet, "Scanning planet size")
+            self.planet.getSize()
+        log(self.planet, "Done scanning planet " + self.planet.getNameWithSize())
         if self.planet.upgradingEnd: #if a building is currently being build
             log(self.planet, "Waiting for a building to end in " + str(self.planet.upgradingEnd - time.time()))
             newTask = PlanningTask(self.planet.upgradingEnd, self.planet)
             self.planet.player.ia.addTask(newTask)
         else:
-            log(self.planet, "Planning building")
-            newTask = self.planet.planBuilding()
-            log(self.planet, "Done planning building")
-            log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
+            if self.planet.sizeUsed < self.planet.sizeMax:
+                log(self.planet, "Planning building")
+                newTask = self.planet.planBuilding()
+                log(self.planet, "Done planning building")
+                log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
+            else:
+                log(self.planet, "Planet filled !")
+                
 
 class Building:
     def __init__(self, type, id, planet, level=0):
@@ -159,6 +179,9 @@ class Planet:
         self.energyStorage = None
         self.lastExtracedInfosDate = None
         self.upgradingEnd = 0 #when the last upgrade will finish. Either 0 or time.time() + rest
+        self.isMoon = "Lune" in name
+        self.sizeUsed = None
+        self.sizeMax = None
     
     def buildingById(self, id):
         for b in self.batiments:
@@ -171,6 +194,25 @@ class Planet:
             if b.type == type:
                 return b
         return None
+    
+    def getNameWithSize(self):
+        return self.name + " (" + self.sizeUsed + "/" + self.sizeMax + ")"
+    
+    def getSize(self):
+        reqP = Request(overviewPage + "&cp=" + self.id, {})
+        self.player.ia.execRequest(reqP)
+        soup = BeautifulSoup(reqP.content, "html.parser")
+        #parse the size
+        self.sizeUsed = soup.find(attrs={"title": 'Cases occupées'}).text
+        self.sizeMax = soup.find(attrs={"title": 'Cases max. disponibles'}).text
+    
+    def rename(self, name): #Returns true if renaming worked
+        reqP = Request(renamingPage + name + "&cp=" + self.id, {})
+        response = self.player.ia.execRequest(reqP)
+        if reqP.response.status_code == 200:
+            self.name = name
+            return True
+        return False
         
     def planBuilding(self):
         b = None
@@ -274,7 +316,7 @@ class Planet:
         self.metal = float(soup.find(id="current_metal").attrs['data-real'])
         self.crystal = float(soup.find(id="current_crystal").attrs['data-real'])
         deutTd = soup.find(id="current_deuterium")
-        energyText = deutTd.nextSibling.span.text #-40 / 0 for example
+        energyText = deutTd.nextSibling.span.text.replace(".", "") #-40 / 0 for example
         e = energyParser.findall(energyText)
         self.energy = int(e[0][0])
         self.energyStorage = int(e[0][1])
@@ -283,9 +325,14 @@ class Planet:
         self.crystalStorage = float(soup.find(id="max_crystal").text.replace(".", ""))
         self.deutStorage = float(soup.find(id="max_deuterium").text.replace(".", ""))
         script = soup.find_all("script", attrs={"type":"text/javascript"})[-1].text
-        self.metalProduction = float(metalProductionParser.findall(script)[0]) / 3600
-        self.crystalProduction = float(crystalProductionParser.findall(script)[0]) / 3600
-        self.deutProduction = float(deutProductionParser.findall(script)[0]) / 3600
+        if self.isMoon: #Moons don't produce        
+            self.metalProduction = 0
+            self.crystalProduction = 0
+            self.deutProduction = 0
+        else:
+            self.metalProduction = float(metalProductionParser.findall(script)[0]) / 3600
+            self.crystalProduction = float(crystalProductionParser.findall(script)[0]) / 3600
+            self.deutProduction = float(deutProductionParser.findall(script)[0]) / 3600
 
     def expectedRessources(self, timeTarget=time.time(), takeStorageInAccount=True):
         t = (timeTarget - self.lastExtracedInfosDate) / 3600
@@ -296,6 +343,19 @@ class Planet:
             return [min(em, self.metalStorage), min(ec, self.crystalStorage), min(ed, self.deutStorage)] 
         return [em, ec, ed]
 
+class Fleet:
+    def __init__(self, player, id, origin, target, eta, type):
+        self.player = player
+        self.id = id
+        self.origin = origin
+        self.target = target
+        self.eta = eta
+        self.isGoing = True #either is going to target, or is coming back
+        self.type = type
+    
+    def isHostile(self):
+        return self.type == "attack"
+
 class Player:
     def __init__(self, pseudo, mdp, universe, ia):
         self.pseudo = pseudo
@@ -305,6 +365,7 @@ class Player:
         self.lastRequest = None
         self.lastExtracedInfosDate = None
         self.planets = []
+        self.fleets = [] #friendly, own and hostile
         self.ia = ia
       
     def connexion(self):
@@ -321,6 +382,7 @@ class Player:
             sys.exit("Login/Password incorrect")
         else:
             log(None, "Connected")
+            log(None, "Cookie : @2Moons = " + session.cookies["2Moons"])
 
     def extractInfos(self, request=None, darkMatter=False, planets=True):
         if request == None:
@@ -339,3 +401,37 @@ class Player:
                     pl = Planet(p.attrs['value'], planet[0][0], [int(x) for x in planet[0][1].split(":")], self)
                     self.planets.append(pl)
                     pl.scan()
+    
+    def getFleets(self):
+        overviewRequest = Request(overviewPage, {})
+        self.ia.execRequest(overviewRequest)
+        soup = BeautifulSoup(overviewRequest.response.content, "html.parser")
+        #parse all available buildings
+        fleetsTd = soup.find_all("td", class_="fleets")
+        for fleetTd in fleetsTd:
+            id = fleetTd.id
+            eta = fleetTd.attrs["data-fleet-end-time"]
+            fleetSpan = fleetTd.parent.find("span")
+            typeList = fleetSpan.attrs["class"]
+            isGoing = (typeList[0] == "flight")
+            type = typeList[1]
+            originA = fleetSpan.findAll("a", class_=type)[1]
+            targetA = fleetSpan.findAll("a", class_=type)[2]
+            origin = [int(x) for x in originA.text[1:-1].split(":")]
+            originIsMoon = "Lune" in originA.previous
+            target = [int(x) for x in targetA.text[1:-1].split(":")]
+            targetIsMoon = "Lune" in targetA.previous
+            fleet = Fleet(self, id, origin, target, eta, type)
+            self.fleets.append(fleet)
+            originPlanet = self.getOwnPlanetByPosition(origin, originIsMoon)
+            targetPlanet = self.getOwnPlanetByPosition(target, targetIsMoon)
+            if type == "attack" and targetPlanet is not None and isGoing: #if we are getting attacked
+                True #TODO : add task to evade attack fleet
+            
+            
+    def getOwnPlanetByPosition(self, position, isMoon=False):
+        for p in self.planets:
+            if p.pos == position and p.isMoon == isMoon:
+                return p
+        return None
+        
