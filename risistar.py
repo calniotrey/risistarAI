@@ -9,6 +9,7 @@ pseudo = file.readline().replace("\n", "")
 password = file.readline().replace("\n", "")  # en clair
 file.close()
 
+domain = "risistar.fr"
 mainURL = 'http://risistar.fr/index.php?'
 buildingPage = 'http://risistar.fr/game.php?page=buildings'
 overviewPage = 'http://risistar.fr/game.php?page=overview'
@@ -28,6 +29,9 @@ def log(planet, str):
         print(time.strftime("%H:%M:%S"), " [", planet.id, "] ", str, sep='')
     else:
         print(time.strftime("%H:%M:%S"), " [   ] ", str, sep='')
+
+def setupRisistarCookie(cookieValue):
+    session.cookies.set('2Moons', cookieValue, domain=domain)
 
 class Request:
     def __init__(self, url, payload):
@@ -100,6 +104,10 @@ class IA:
             self.player.connexion()
             req.connect()
         self.player.lastRequest = req
+    
+    def changeCookie(self, newCookie):
+        log(None, "Changing cookie : 2Moons = " + newCookie)
+        session.cookies.set('2Moons', newCookie, domain=domain)
 
 class BuildingTask(Task):
     def __init__(self, t, bat):
@@ -380,6 +388,11 @@ class Player:
         if """var loginError = "Combinaison login""" in connexionRequest.content:
             log(None, "Login/Password incorrect")
             sys.exit("Login/Password incorrect")
+        elif """var loginError = "Votre session a expir""" in connexionRequest.content:
+            #if the cookie we setup was false
+            log(None, "Bad Cookie. Clearing session cookies and trying to reconnect using credentials")
+            session.cookies.clear()
+            self.connexion()
         else:
             log(None, "Connected")
             log(None, "Cookie : @2Moons = " + session.cookies["2Moons"])
