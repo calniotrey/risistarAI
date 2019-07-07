@@ -9,7 +9,7 @@ pseudo = file.readline().replace("\n", "")
 password = file.readline().replace("\n", "")  # en clair
 file.close()
 
-domain             = "beta.risistar.fr"
+domain             = "risistar.fr"
 mainURL            = "https://" + domain + "/index.php?"
 buildingPage       = "https://" + domain + "/game.php?page=buildings"
 overviewPage       = "https://" + domain + "/game.php?page=overview"
@@ -114,6 +114,21 @@ class IA:
     def changeCookie(self, newCookie):
         log(None, "Changing cookie : 2Moons = " + newCookie)
         session.cookies.set('2Moons', newCookie, domain=domain)
+
+class ScanFleetsTask(Task):
+    def __init__(self, t, player):
+        self.t = t
+        self.player = player
+    
+    def execute(self):
+        ia.player.getFleets()
+        log(None, "Scanned fleets")
+        for fleet in self.player.fleets:
+            targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
+            if fleet.type == "attack" and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
+                log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(fleet.eta - time.time()))
+        newTask = ScanFleetsTask(time.time() + 30, self.player)
+        self.player.ia.addTask(newTask)
 
 class BuildingTask(Task):
     def __init__(self, t, bat):
@@ -446,16 +461,17 @@ class Fleet:
     colonizeCode   = 7
     expeditionCode = 15
 
-    def __init__(self, player, id, origin, target, eta, type):
+    def __init__(self, player, id, origin, target, eta, type, isGoing):
         self.player = player
         self.id = id
         self.origin = origin
         self.target = target
         self.eta = eta
-        self.isGoing = True #either is going to target, or is coming back
+        self.isGoing = isGoing #either is going to target, or is coming back
         self.type = type
+        self.isHostile = False
 
-    def isHostile(self):
+    def isAttack(self):
         return self.type == "attack"
 
     def sendBack(self): #no check wether the fleet is ours
@@ -509,19 +525,28 @@ class Player:
                 self.planets = []
                 for p in ps:
                     planet = planetNameParser.findall(str(p))
-                    pl = Planet(p.attrs['value'], planet[0][0], [int(x) for x in planet[0][1].split(":")], self)
+                    id = p.attrs['value']
+                    name = planet[0][0]
+                    position = [int(x) for x in planet[0][1].split(":")]
+                    if "Lune" in name:
+                        position.append(3)
+                    else:
+                        position.append(1)
+                    pl = Planet(id, name, position, self)
                     self.planets.append(pl)
                     pl.scan()
     
     def getFleets(self):
+        fleets = []
         overviewRequest = Request(overviewPage, {})
         self.ia.execRequest(overviewRequest)
         soup = BeautifulSoup(overviewRequest.response.content, "html.parser")
         #parse all available buildings
         fleetsTd = soup.find_all("td", class_="fleets")
         for fleetTd in fleetsTd:
-            eta = fleetTd.attrs["data-fleet-end-time"]
-            id = fleetTd.attrs["id"].split(eta)[1] #The eta is appended at the end of the id
+            etaStr = fleetTd.attrs["data-fleet-end-time"]
+            eta = float(etaStr)
+            id = fleetTd.attrs["id"].split(etaStr)[1] #The etaStr is appended at the end of the id
             fleetSpan = fleetTd.parent.find("span")
             typeList = fleetSpan.attrs["class"]
             isGoing = (typeList[0] == "flight")
@@ -529,19 +554,30 @@ class Player:
             originA = fleetSpan.findAll("a", class_=type)[1]
             targetA = fleetSpan.findAll("a", class_=type)[2]
             origin = [int(x) for x in originA.text[1:-1].split(":")]
-            originIsMoon = "Lune" in originA.previous
+            if "Lune" in originA.previous:
+                origin.append(3)
+            elif "CDR" in originA.previous:
+                origin.append(2)
+            else:
+                origin.append(1)
             target = [int(x) for x in targetA.text[1:-1].split(":")]
-            targetIsMoon = "Lune" in targetA.previous
-            fleet = Fleet(self, id, origin, target, eta, type)
-            self.fleets.append(fleet)
-            originPlanet = self.getOwnPlanetByPosition(origin, originIsMoon)
-            targetPlanet = self.getOwnPlanetByPosition(target, targetIsMoon)
-            if type == "attack" and targetPlanet is not None and isGoing: #if we are getting attacked
-                True #TODO : add task to evade attack fleet
+            if "Lune" in targetA.previous:
+                target.append(3)
+            elif "CDR" in targetA.previous:
+                target.append(2)
+            else:
+                target.append(1)
+            fleet = Fleet(self, id, origin, target, eta, type, isGoing)
+            #originPlanet = self.getOwnPlanetByPosition(origin)
+            # targetPlanet = self.getOwnPlanetByPosition(target)
+            # if type == "attack" and targetPlanet is not None and isGoing: #if we are getting attacked
+            #     fleet.isHostile = True
+            fleets.append(fleet)
+        self.fleets = fleets
 
-    def getOwnPlanetByPosition(self, position, isMoon=False):
+    def getOwnPlanetByPosition(self, position):
         for p in self.planets:
-            if p.pos == position and p.isMoon == isMoon:
+            if p.pos == position:
                 return p
         return None
 
