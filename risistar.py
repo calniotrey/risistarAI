@@ -9,11 +9,11 @@ pseudo = file.readline().replace("\n", "")
 password = file.readline().replace("\n", "")  # en clair
 file.close()
 
-domain = "risistar.fr"
-mainURL = 'http://risistar.fr/index.php?'
-buildingPage = 'http://risistar.fr/game.php?page=buildings'
-overviewPage = 'http://risistar.fr/game.php?page=overview'
-renamingPage = 'http://risistar.fr/game.php?page=overview&mode=rename&name='
+domain       = "beta.risistar.fr"
+mainURL      = "https://" + domain + "/index.php?"
+buildingPage = "https://" + domain + "/game.php?page=buildings"
+overviewPage = "https://" + domain + "/game.php?page=overview"
+renamingPage = "https://" + domain + "/game.php?page=overview&mode=rename&name="
 session = requests.session()
 
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
@@ -115,9 +115,15 @@ class BuildingTask(Task):
         self.bat = bat
     
     def execute(self):
-        self.bat.upgrade()
-        log(self.bat.planet, "Building " + self.bat.type + " to level " + str(self.bat.level + 1) + " in " + str(self.bat.upgradeTime))
-        self.bat.planet.player.ia.addTask(PlanningTask(time.time() + self.bat.upgradeTime, self.bat.planet))
+        req = self.bat.upgrade()
+        self.bat.planet.scanUsingRequest(req)
+        if self.bat.planet.upgradingEnd == 0: #the building wasn't upgraded
+            log(self.bat.planet, "Waiting an additionnal second (SHOULDN'T HAPPEN NORMALLY)")
+            newTask = BuildingTask(time.time() + 1, self.bat)
+            self.bat.planet.player.ia.addTask(newTask)
+        else:
+            log(self.bat.planet, "Building " + self.bat.type + " to level " + str(self.bat.level + 1) + " in " + str(self.bat.upgradeTime))
+            self.bat.planet.player.ia.addTask(PlanningTask(time.time() + self.bat.upgradeTime, self.bat.planet))
 
 class PlanningTask(Task):
     def __init__(self, t, planet):
@@ -127,7 +133,7 @@ class PlanningTask(Task):
     def execute(self):
         log(self.planet, "Scanning planet")
         self.planet.scan()
-        if self.planet.sizeUsed is None:
+        if self.planet.sizeMax is None:
             log(self.planet, "Scanning planet size")
             self.planet.getSize()
         log(self.planet, "Done scanning planet " + self.planet.getNameWithSize())
@@ -146,11 +152,26 @@ class PlanningTask(Task):
                 
 
 class Building:
+    buildingCode = {}
+    buildingCode["Mine de Métal"              ] = 1
+    buildingCode["Mine de Cristal"            ] = 2
+    buildingCode["Synthétiseur de Deutérium"  ] = 3
+    buildingCode["Centrale éléctrique Solaire"] = 4
+    buildingCode["Usine de Robots"            ] = 14
+    buildingCode["Chantier Spatial"           ] = 21
+    buildingCode["Hangar de Métal"            ] = 22
+    buildingCode["Hangar de Cristal"          ] = 23
+    buildingCode["Réservoir de Deutérium"     ] = 24
+    buildingCode["Laboratoire de Recherche"   ] = 31
+    buildingCode["Dépôt d'Alliance"           ] = 34
+
     def __init__(self, type, id, planet, level=0):
         self.type = type
         self.level = level
         self.planet = planet
-        self.id = id  #if not upgradable, then it's currently None (to be patched in the future, for now just use it when upgradable)
+        self.id = id
+        if id is None: #if the building isn't upgradable
+            self.id = Building.buildingCode[type]
         self.upgradeTime = None
         self.upgradeCost = None
     
@@ -165,6 +186,7 @@ class Building:
             payload = {'cmd': 'insert', 'building': self.id}
             reqB = Request(buildingPage + "&cp=" + self.planet.id, payload)
             self.planet.player.ia.execRequest(reqB)
+            return reqB
         
 class Planet:
     def __init__(self, id, name, position, player):
@@ -204,15 +226,15 @@ class Planet:
         return None
     
     def getNameWithSize(self):
-        return self.name + " (" + self.sizeUsed + "/" + self.sizeMax + ")"
+        return self.name + " (" + str(self.sizeUsed) + "/" + str(self.sizeMax) + ")"
     
     def getSize(self):
         reqP = Request(overviewPage + "&cp=" + self.id, {})
         self.player.ia.execRequest(reqP)
         soup = BeautifulSoup(reqP.content, "html.parser")
         #parse the size
-        self.sizeUsed = soup.find(attrs={"title": 'Cases occupées'}).text
-        self.sizeMax = soup.find(attrs={"title": 'Cases max. disponibles'}).text
+        self.sizeUsed = int(soup.find(attrs={"title": 'Cases occupées'}).text)
+        self.sizeMax = int(soup.find(attrs={"title": 'Cases max. disponibles'}).text)
     
     def rename(self, name): #Returns true if renaming worked
         reqP = Request(renamingPage + name + "&cp=" + self.id, {})
@@ -266,6 +288,9 @@ class Planet:
     def scan(self):
         reqB = Request(buildingPage + "&cp=" + self.id, {})
         self.player.ia.execRequest(reqB)
+        self.scanUsingRequest(reqB)
+
+    def scanUsingRequest(self, reqB):
         soup = BeautifulSoup(reqB.content, "html.parser")
         #parse all available buildings
         bats = soup.find(id="content").find_all("div", recursive=False)
@@ -341,6 +366,10 @@ class Planet:
             self.metalProduction = float(metalProductionParser.findall(script)[0]) / 3600
             self.crystalProduction = float(crystalProductionParser.findall(script)[0]) / 3600
             self.deutProduction = float(deutProductionParser.findall(script)[0]) / 3600
+        sizeUsed = 0
+        for batiment in self.batiments:
+            sizeUsed += batiment.level
+        self.sizeUsed = sizeUsed
 
     def expectedRessources(self, timeTarget=time.time(), takeStorageInAccount=True):
         t = (timeTarget - self.lastExtracedInfosDate) / 3600
