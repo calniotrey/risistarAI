@@ -10,10 +10,10 @@ password = file.readline().replace("\n", "")  # en clair
 file.close()
 
 domain       = "beta.risistar.fr"
-mainURL      = "http://" + domain + "/index.php?"
-buildingPage = "http://" + domain + "/game.php?page=buildings"
-overviewPage = "http://" + domain + "/game.php?page=overview"
-renamingPage = "http://" + domain + "/game.php?page=overview&mode=rename&name="
+mainURL      = "https://" + domain + "/index.php?"
+buildingPage = "https://" + domain + "/game.php?page=buildings"
+overviewPage = "https://" + domain + "/game.php?page=overview"
+renamingPage = "https://" + domain + "/game.php?page=overview&mode=rename&name="
 session = requests.session()
 
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
