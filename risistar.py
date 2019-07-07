@@ -9,11 +9,17 @@ pseudo = file.readline().replace("\n", "")
 password = file.readline().replace("\n", "")  # en clair
 file.close()
 
-domain       = "beta.risistar.fr"
-mainURL      = "https://" + domain + "/index.php?"
-buildingPage = "https://" + domain + "/game.php?page=buildings"
-overviewPage = "https://" + domain + "/game.php?page=overview"
-renamingPage = "https://" + domain + "/game.php?page=overview&mode=rename&name="
+domain             = "risistar.fr"
+mainURL            = "https://" + domain + "/index.php?"
+buildingPage       = "https://" + domain + "/game.php?page=buildings"
+overviewPage       = "https://" + domain + "/game.php?page=overview"
+renamingPage       = "https://" + domain + "/game.php?page=overview&mode=rename&name="
+sendBackFleetPage  = "https://" + domain + "/game.php?page=fleetTable&action=sendfleetback"
+sendFleetStep1Page = "https://" + domain + "/game.php?page=fleetStep1"
+sendFleetStep2Page = "https://" + domain + "/game.php?page=fleetStep2"
+sendFleetStep3Page = "https://" + domain + "/game.php?page=fleetStep3"
+getShipsPage       = "https://" + domain + "/game.php?page=fleetTable"
+
 session = requests.session()
 
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
@@ -109,6 +115,21 @@ class IA:
         log(None, "Changing cookie : 2Moons = " + newCookie)
         session.cookies.set('2Moons', newCookie, domain=domain)
 
+class ScanFleetsTask(Task):
+    def __init__(self, t, player):
+        self.t = t
+        self.player = player
+    
+    def execute(self):
+        ia.player.getFleets()
+        log(None, "Scanned fleets")
+        for fleet in self.player.fleets:
+            targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
+            if fleet.type == "attack" and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
+                log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(fleet.eta - time.time()))
+        newTask = ScanFleetsTask(time.time() + 30, self.player)
+        self.player.ia.addTask(newTask)
+
 class BuildingTask(Task):
     def __init__(self, t, bat):
         self.t = t
@@ -148,7 +169,9 @@ class PlanningTask(Task):
                 log(self.planet, "Done planning building")
                 log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
             else:
-                log(self.planet, "Planet filled !")
+                log(self.planet, "Planet filled ! Retrying in 10 minutes")
+                newTask = PlanningTask(time.time() + 600, self.planet)
+                self.planet.player.ia.addTask(newTask)
                 
 
 class Building:
@@ -157,6 +180,7 @@ class Building:
     buildingCode["Mine de Cristal"            ] = 2
     buildingCode["Synthétiseur de Deutérium"  ] = 3
     buildingCode["Centrale éléctrique Solaire"] = 4
+    buildingCode["Centrale de fusion"         ] = 12
     buildingCode["Usine de Robots"            ] = 14
     buildingCode["Chantier Spatial"           ] = 21
     buildingCode["Hangar de Métal"            ] = 22
@@ -164,6 +188,7 @@ class Building:
     buildingCode["Réservoir de Deutérium"     ] = 24
     buildingCode["Laboratoire de Recherche"   ] = 31
     buildingCode["Dépôt d'Alliance"           ] = 34
+    buildingCode["Silo de Missiles"           ] = 44
 
     def __init__(self, type, id, planet, level=0):
         self.type = type
@@ -171,7 +196,7 @@ class Building:
         self.planet = planet
         self.id = id
         if id is None: #if the building isn't upgradable
-            self.id = Building.buildingCode[type]
+            self.id = Building.buildingCode.get(type, None)
         self.upgradeTime = None
         self.upgradeCost = None
     
@@ -212,6 +237,7 @@ class Planet:
         self.isMoon = "Lune" in name
         self.sizeUsed = None
         self.sizeMax = None
+        self.ships = {}
     
     def buildingById(self, id):
         for b in self.batiments:
@@ -380,18 +406,77 @@ class Planet:
             return [min(em, self.metalStorage), min(ec, self.crystalStorage), min(ed, self.deutStorage)] 
         return [em, ec, ed]
 
+    def getShips(self):
+        getShipsRequest = Request(getShipsPage + "&cp=" + self.id, {})
+        self.player.ia.execRequest(getShipsRequest)
+        soup = BeautifulSoup(getShipsRequest.content, "html.parser")
+        #parse all available ships
+        shipsTr = soup.find("table", class_="table519").find_all("tr")[2:-2] #the first and last 2 are headers
+        ships = {}
+        for shipTr in shipsTr:
+            shipTd = shipTr.find_all("td")[1]
+            shipId = shipTd.attrs["id"].split("_")[0]
+            shipAmount = int(shipTd.text)
+            ships[shipId] = shipAmount
+        self.ships = ships
+
+    def sendFleet(self, target, missionType, ships, ressources, speed=10, staytime=1):
+        firstPayload = {}
+        for ship in ships.keys():
+            firstPayload[ship] = ships[ship]
+        sendFleetStep1 = Request(sendFleetStep1Page + "&cp=" + self.id, firstPayload)
+        self.player.ia.execRequest(sendFleetStep1)
+        soup = BeautifulSoup(sendFleetStep1.content, "html.parser")
+        tokenInput = soup.find("input", attrs={"name":"token"})
+        if tokenInput is not None:
+            token = tokenInput.attrs["value"]
+            secondPayload = {}
+            secondPayload["galaxy"] = target[0]
+            secondPayload["system"] = target[1]
+            secondPayload["planet"] = target[2]
+            secondPayload["type"  ] = target[3] #1 = planet, 2 = CDR, 3 = moon
+            secondPayload["speed" ] = speed #the speed in multiples of 10%
+            secondPayload["token" ] = token
+            sendFleetStep2 = Request(sendFleetStep2Page + "&cp=" + self.id, secondPayload)
+            self.player.ia.execRequest(sendFleetStep2)
+            thirdPayload = {}
+            thirdPayload["metal"    ] = ressources[0]
+            thirdPayload["crystal"  ] = ressources[1]
+            thirdPayload["deuterium"] = ressources[2]
+            thirdPayload["mission"  ] = missionType
+            thirdPayload["staytime" ] = staytime
+            thirdPayload["token"    ]  = token
+            sendFleetStep3 = Request(sendFleetStep3Page + "&cp=" + self.id, thirdPayload)
+            self.player.ia.execRequest(sendFleetStep3)
+            log(self, "Fleet sent")
+        else:
+            log(self, "Error while sending the fleet")
+
 class Fleet:
-    def __init__(self, player, id, origin, target, eta, type):
+    attackCode     = 1
+    transportCode  = 3
+    deployCode     = 4
+    stationCode    = 5
+    spyCode        = 6
+    colonizeCode   = 7
+    expeditionCode = 15
+
+    def __init__(self, player, id, origin, target, eta, type, isGoing):
         self.player = player
         self.id = id
         self.origin = origin
         self.target = target
         self.eta = eta
-        self.isGoing = True #either is going to target, or is coming back
+        self.isGoing = isGoing #either is going to target, or is coming back
         self.type = type
-    
-    def isHostile(self):
+        self.isHostile = False
+
+    def isAttack(self):
         return self.type == "attack"
+
+    def sendBack(self): #no check wether the fleet is ours
+        sendBackRequest = Request(sendBackFleetPage, {"fleetID": self.id})
+        self.player.ia.execRequest(sendBackRequest)
 
 class Player:
     def __init__(self, pseudo, mdp, universe, ia):
@@ -440,19 +525,28 @@ class Player:
                 self.planets = []
                 for p in ps:
                     planet = planetNameParser.findall(str(p))
-                    pl = Planet(p.attrs['value'], planet[0][0], [int(x) for x in planet[0][1].split(":")], self)
+                    id = p.attrs['value']
+                    name = planet[0][0]
+                    position = [int(x) for x in planet[0][1].split(":")]
+                    if "Lune" in name:
+                        position.append(3)
+                    else:
+                        position.append(1)
+                    pl = Planet(id, name, position, self)
                     self.planets.append(pl)
                     pl.scan()
     
     def getFleets(self):
+        fleets = []
         overviewRequest = Request(overviewPage, {})
         self.ia.execRequest(overviewRequest)
         soup = BeautifulSoup(overviewRequest.response.content, "html.parser")
         #parse all available buildings
         fleetsTd = soup.find_all("td", class_="fleets")
         for fleetTd in fleetsTd:
-            id = fleetTd.id
-            eta = fleetTd.attrs["data-fleet-end-time"]
+            etaStr = fleetTd.attrs["data-fleet-end-time"]
+            eta = float(etaStr)
+            id = fleetTd.attrs["id"].split(etaStr)[1] #The etaStr is appended at the end of the id
             fleetSpan = fleetTd.parent.find("span")
             typeList = fleetSpan.attrs["class"]
             isGoing = (typeList[0] == "flight")
@@ -460,20 +554,30 @@ class Player:
             originA = fleetSpan.findAll("a", class_=type)[1]
             targetA = fleetSpan.findAll("a", class_=type)[2]
             origin = [int(x) for x in originA.text[1:-1].split(":")]
-            originIsMoon = "Lune" in originA.previous
+            if "Lune" in originA.previous:
+                origin.append(3)
+            elif "CDR" in originA.previous:
+                origin.append(2)
+            else:
+                origin.append(1)
             target = [int(x) for x in targetA.text[1:-1].split(":")]
-            targetIsMoon = "Lune" in targetA.previous
-            fleet = Fleet(self, id, origin, target, eta, type)
-            self.fleets.append(fleet)
-            originPlanet = self.getOwnPlanetByPosition(origin, originIsMoon)
-            targetPlanet = self.getOwnPlanetByPosition(target, targetIsMoon)
-            if type == "attack" and targetPlanet is not None and isGoing: #if we are getting attacked
-                True #TODO : add task to evade attack fleet
-            
-            
-    def getOwnPlanetByPosition(self, position, isMoon=False):
+            if "Lune" in targetA.previous:
+                target.append(3)
+            elif "CDR" in targetA.previous:
+                target.append(2)
+            else:
+                target.append(1)
+            fleet = Fleet(self, id, origin, target, eta, type, isGoing)
+            #originPlanet = self.getOwnPlanetByPosition(origin)
+            # targetPlanet = self.getOwnPlanetByPosition(target)
+            # if type == "attack" and targetPlanet is not None and isGoing: #if we are getting attacked
+            #     fleet.isHostile = True
+            fleets.append(fleet)
+        self.fleets = fleets
+
+    def getOwnPlanetByPosition(self, position):
         for p in self.planets:
-            if p.pos == position and p.isMoon == isMoon:
+            if p.pos == position:
                 return p
         return None
-        
+
