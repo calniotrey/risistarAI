@@ -2,6 +2,7 @@ import requests
 import sys, time, re
 import heapq
 import threading
+import random
 from bs4 import BeautifulSoup
 
 file = open("secret.txt")
@@ -148,7 +149,7 @@ class ScanFleetsTask(Task):
         self.prio = IA.middlePrio
     
     def execute(self):
-        ia.player.getFleets()
+        self.player.ia.player.getFleets()
         log(None, "Scanned fleets")
         for fleet in self.player.fleets:
             targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
