@@ -61,6 +61,7 @@ class Request:
 class Task:
     def __init__(self, t):
         self.t = t
+        self.prio = IA.lowPrio
     
     def __gt__(self, other):
         return self.t > other.t
@@ -69,32 +70,56 @@ class Task:
         return self.t >= other.t
 
 class IA:
+    highPrio   = 0
+    middlePrio = 1
+    lowPrio    = 2
+    descendingPrio = [highPrio, middlePrio, lowPrio]
+
     def __init__(self, pseudo, password):
         self.player = Player(pseudo, password, "Risistar", self)
         self.player.connexion()
         self.player.extractInfos(planets=True)
-        self.h = []   #liste triée croissante selon le temps planifié
+        self.tasks = {}
+        self.tasks[IA.lowPrio   ] = [] #building, technos ...
+        self.tasks[IA.middlePrio] = [] #scanning fleets
+        self.tasks[IA.highPrio  ] = [] #evading ennemy fleet
         self._stop = False
         for p in self.player.planets:
             if not p.isMoon:
                 self.addTask(PlanningTask(time.time(), p))
+        self.addTask(ScanFleetsTask(time.time(), self.player, 0))
     
     def addTask(self, t):
-        heapq.heappush(self.h, t)
+        heapq.heappush(self.tasks[t.prio], t)
     
     def run(self):
-        while len(self.h) and self.h[0].t < time.time():
-            taskToExecute = heapq.heappop(self.h)
-            taskToExecute.execute()
+        stop = False
+        while not stop:
+            stop = True
+            for prio in IA.descendingPrio:
+                if len(self.tasks[prio]) and self.tasks[prio][0].t < time.time():
+                    taskToExecute = heapq.heappop(self.tasks[prio])
+                    taskToExecute.execute()
+                    stop = False
 
     def permaRun(self, longestWait=10):
         while not self._stop:
             self.run()
-            timeToSleep = self.h[0].t - time.time()
-            if timeToSleep > 0:
+            timeToSleep = self.timeToNextTask()
+            if timeToSleep is not None and timeToSleep > 0:
                 time.sleep(min(timeToSleep, longestWait))
         log(None, "Stopped")
     
+    def timeToNextTask(self):
+        nextTaskTime = None
+        for prio in IA.descendingPrio:
+            if len(self.tasks[prio]) and (nextTaskTime is None or self.tasks[prio][0].t < nextTaskTime):
+                nextTaskTime = self.tasks[prio][0].t
+        if nextTaskTime == None:
+            log(None, "No more tasks ! ALERT")
+            return None
+        return nextTaskTime - time.time()
+
     def permaRunDetached(self):
         threading.Thread(target=self.permaRun).start()
     
@@ -116,9 +141,10 @@ class IA:
         session.cookies.set('2Moons', newCookie, domain=domain)
 
 class ScanFleetsTask(Task):
-    def __init__(self, t, player):
-        self.t = t
+    def __init__(self, t, player, randomAdditionnalWait=10):
+        self.t = t + random.random() * randomAdditionnalWait
         self.player = player
+        self.prio = IA.middlePrio
     
     def execute(self):
         ia.player.getFleets()
@@ -134,13 +160,14 @@ class BuildingTask(Task):
     def __init__(self, t, bat):
         self.t = t
         self.bat = bat
+        self.prio = IA.lowPrio
     
     def execute(self):
         req = self.bat.upgrade()
         self.bat.planet.scanUsingRequest(req)
         if self.bat.planet.upgradingEnd == 0: #the building wasn't upgraded
-            log(self.bat.planet, "Waiting an additionnal second (SHOULDN'T HAPPEN NORMALLY)")
-            newTask = BuildingTask(time.time() + 1, self.bat)
+            log(self.bat.planet, "Re-planning building")
+            newTask = PlanningTask(time.time(), self.bat.planet)
             self.bat.planet.player.ia.addTask(newTask)
         else:
             log(self.bat.planet, "Building " + self.bat.type + " to level " + str(self.bat.level + 1) + " in " + str(self.bat.upgradeTime))
@@ -150,6 +177,7 @@ class PlanningTask(Task):
     def __init__(self, t, planet):
         self.t = t
         self.planet = planet
+        self.prio = IA.lowPrio
     
     def execute(self):
         log(self.planet, "Scanning planet")
@@ -278,7 +306,7 @@ class Planet:
             metalMine = self.buildingByType('Mine de Métal').level
             crystalMine = self.buildingByType('Mine de Cristal').level
             deutMine = self.buildingByType('Synthétiseur de Deutérium').level
-            if crystalMine > deutMine + 3:
+            if crystalMine > deutMine + 5:
                 b = 'Synthétiseur de Deutérium'
             else:
                 if metalMine > crystalMine + 2:
@@ -473,6 +501,15 @@ class Fleet:
 
     def isAttack(self):
         return self.type == "attack"
+
+    def isSpy(self):
+        return self.type == "espionage" or self.type == "ownespionage"
+
+    def isHostileSpy(self):
+        return self.type == "espionage"
+
+    def isOwnSpy(self):
+        return self.type == "ownespionage"
 
     def sendBack(self): #no check wether the fleet is ours
         sendBackRequest = Request(sendBackFleetPage, {"fleetID": self.id})
