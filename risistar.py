@@ -21,6 +21,7 @@ sendFleetStep3Page = "https://" + domain + "/game.php?page=fleetStep3"
 getShipsPage       = "https://" + domain + "/game.php?page=fleetTable"
 
 session = requests.session()
+session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0'})
 
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
 buildingNameParser = re.compile(r'''\A([^\(]+)(?:\(.* (\d*))?''')
