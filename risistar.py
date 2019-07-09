@@ -4,13 +4,16 @@ import heapq
 import threading
 import random
 from bs4 import BeautifulSoup
+from Config import Config
 
 file = open("secret.txt")
 pseudo = file.readline().replace("\n", "")
 password = file.readline().replace("\n", "")  # en clair
 file.close()
 
-domain             = "risistar.fr"
+config = Config.load()
+
+domain             = config.domain
 mainURL            = "https://" + domain + "/index.php?"
 buildingPage       = "https://" + domain + "/game.php?page=buildings"
 overviewPage       = "https://" + domain + "/game.php?page=overview"
@@ -162,19 +165,19 @@ class ScanFleetsTask(Task):
                 try:
                     if (fleet.eta - time.time()) < 60:
                         targetPlanet.getShips()
-                        targetPlanet.sendFleet([1,15,10,1], Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
-                        self.scanRessourcesUsingRequest(self.player.lastRequest)
+                        targetPlanet.sendFleet(config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
                         lle = min(targetPlanet.metal//1500, targetPlanet.crystal//500)
                         targetPlanet.buildDefenses({402:lle})
-                        self.scanRessourcesUsingRequest(self.player.lastRequest)
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
                         lm = targetPlanet.metal//2000
                         targetPlanet.buildDefenses({401:lm})
                 except:
-                    print("ERREUR")
+                    print("ERROR LOL")
         try:
             if not ennemyFleetInc:
                 for fleet in self.player.fleets:
-                    if fleet.target == [1,15,10,1]:
+                    if fleet.target == config.escapeTarget:
                         fleet.sendBack()
         except:
             print("Erreur lors de l'annulation")
