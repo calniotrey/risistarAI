@@ -1,0 +1,5 @@
+#This is a comment
+#This too
+domain=beta.risistar.fr
+escapeTarget=1:50:5:1
+
