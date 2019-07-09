@@ -4,13 +4,16 @@ import heapq
 import threading
 import random
 from bs4 import BeautifulSoup
+from Config import Config
 
 file = open("secret.txt")
 pseudo = file.readline().replace("\n", "")
 password = file.readline().replace("\n", "")  # en clair
 file.close()
 
-domain             = "risistar.fr"
+config = Config.load()
+
+domain             = config.domain
 mainURL            = "https://" + domain + "/index.php?"
 buildingPage       = "https://" + domain + "/game.php?page=buildings"
 overviewPage       = "https://" + domain + "/game.php?page=overview"
@@ -20,6 +23,7 @@ sendFleetStep1Page = "https://" + domain + "/game.php?page=fleetStep1"
 sendFleetStep2Page = "https://" + domain + "/game.php?page=fleetStep2"
 sendFleetStep3Page = "https://" + domain + "/game.php?page=fleetStep3"
 getShipsPage       = "https://" + domain + "/game.php?page=fleetTable"
+buildDefPage       = "https://" + domain + "/game.php?page=shipyard&mode=defense"
 
 session = requests.session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0'})
@@ -150,11 +154,33 @@ class ScanFleetsTask(Task):
     
     def execute(self):
         self.player.ia.player.getFleets()
+        self.player.getFleets()
         log(None, "Scanned fleets")
+        ennemyFleetInc = False
         for fleet in self.player.fleets:
             targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
             if fleet.type == "attack" and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
                 log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(fleet.eta - time.time()))
+                ennemyFleetInc = True
+                try:
+                    if (fleet.eta - time.time()) < 60:
+                        targetPlanet.getShips()
+                        targetPlanet.sendFleet(config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        lle = min(targetPlanet.metal//1500, targetPlanet.crystal//500)
+                        targetPlanet.buildDefenses({402:lle})
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        lm = targetPlanet.metal//2000
+                        targetPlanet.buildDefenses({401:lm})
+                except:
+                    print("ERROR LOL")
+        try:
+            if not ennemyFleetInc:
+                for fleet in self.player.fleets:
+                    if fleet.target == config.escapeTarget:
+                        fleet.sendBack()
+        except:
+            print("Erreur lors de l'annulation")
         newTask = ScanFleetsTask(time.time() + 30, self.player)
         self.player.ia.addTask(newTask)
 
@@ -427,6 +453,12 @@ class Planet:
             sizeUsed += batiment.level
         self.sizeUsed = sizeUsed
 
+    def scanRessourcesUsingRequest(self, req):
+        soup = BeautifulSoup(req.content, "html.parser")
+        self.metal = float(soup.find(id="current_metal").attrs['data-real'])
+        self.crystal = float(soup.find(id="current_crystal").attrs['data-real'])
+        self.deut = float(soup.find(id="current_deuterium").attrs['data-real'])
+
     def expectedRessources(self, timeTarget=time.time(), takeStorageInAccount=True):
         t = (timeTarget - self.lastExtracedInfosDate) / 3600
         em = self.metal + self.metalProduction * t
@@ -450,7 +482,7 @@ class Planet:
             ships[shipId] = shipAmount
         self.ships = ships
 
-    def sendFleet(self, target, missionType, ships, ressources, speed=10, staytime=1):
+    def sendFleet(self, target, missionType, ships, ressources, speed=10, staytime=1, allRessources=False):
         firstPayload = {}
         for ship in ships.keys():
             firstPayload[ship] = ships[ship]
@@ -470,9 +502,22 @@ class Planet:
             sendFleetStep2 = Request(sendFleetStep2Page + "&cp=" + self.id, secondPayload)
             self.player.ia.execRequest(sendFleetStep2)
             thirdPayload = {}
-            thirdPayload["metal"    ] = ressources[0]
-            thirdPayload["crystal"  ] = ressources[1]
-            thirdPayload["deuterium"] = ressources[2]
+            if allRessources:
+                self.scanRessourcesUsingRequest(sendFleetStep2)
+                ressources[0] = self.metal
+                ressources[1] = self.crystal
+                ressources[2] = self.deut
+            soup = BeautifulSoup(sendFleetStep2.content, "html.parser")
+            scriptRessources = soup.findAll("script")[-1].text
+            fleetroom = int(scriptRessources.split(':"')[1].split('"')[0])
+            consumption = int(scriptRessources.split(':"')[2].split('"')[0])
+            fleetroom -= consumption
+            thirdPayload["deuterium"] = min(ressources[2], fleetroom)
+            fleetroom -= thirdPayload["deuterium"]
+            thirdPayload["crystal"] = min(ressources[1], fleetroom)
+            fleetroom -= thirdPayload["crystal"]
+            thirdPayload["metal"] = min(ressources[0], fleetroom)
+            fleetroom -= thirdPayload["metal"]
             thirdPayload["mission"  ] = missionType
             thirdPayload["staytime" ] = staytime
             thirdPayload["token"    ]  = token
@@ -481,6 +526,14 @@ class Planet:
             log(self, "Fleet sent")
         else:
             log(self, "Error while sending the fleet")
+
+    def buildDefenses(self, defenses):
+        payload = {}
+        for id in defenses.keys():
+            payload["fmenge[" + str(id) + "]"] = defenses[id]
+        buildDefReq = Request(buildDefPage + "&cp=" + self.id, payload)
+        self.player.ia.execRequest(buildDefReq)
+
 
 class Fleet:
     attackCode     = 1
