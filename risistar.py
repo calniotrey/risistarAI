@@ -29,6 +29,7 @@ sendFleetStep2Page = "https://" + domain + "/game.php?page=fleetStep2"
 sendFleetStep3Page = "https://" + domain + "/game.php?page=fleetStep3"
 getShipsPage       = "https://" + domain + "/game.php?page=fleetTable"
 buildDefPage       = "https://" + domain + "/game.php?page=shipyard&mode=defense"
+buildShipPage      = "https://" + domain + "/game.php?page=shipyard&mode=fleet"
 
 session = requests.session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0'})
@@ -173,6 +174,12 @@ class ScanFleetsTask(Task):
                     if (fleet.eta - time.time()) < 60 and config.activateAutoEvasion:
                         targetPlanet.getShips()
                         targetPlanet.sendFleet(config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        gt = min(targetPlanet.metal//6000, targetPlanet.crystal//6000)
+                        targetPlanet.buildShips({203:gt})
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        pt = min(targetPlanet.metal//2000, targetPlanet.crystal//2000)
+                        targetPlanet.buildShips({202:pt})
                         targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
                         lle = min(targetPlanet.metal//1500, targetPlanet.crystal//500)
                         targetPlanet.buildDefenses({402:lle})
@@ -543,6 +550,13 @@ class Planet:
             payload["fmenge[" + str(id) + "]"] = defenses[id]
         buildDefReq = Request(buildDefPage + "&cp=" + self.id, payload)
         self.player.ia.execRequest(buildDefReq)
+
+    def buildShips(self, ships):
+        payload = {}
+        for id in ships.keys():
+            payload["fmenge[" + str(id) + "]"] = ships[id]
+        buildShipReq = Request(buildShipPage + "&cp=" + self.id, payload)
+        self.player.ia.execRequest(buildShipReq)
 
 
 class Fleet:
