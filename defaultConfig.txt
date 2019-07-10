@@ -7,5 +7,5 @@ escapeTarget=1:50:5:1
 # Ex: metal mine 17 -> 17/3 = 5.66 -> robot factory will be upgraded to level 5.
 robotRatio=3
 # Determine when the first level of robot factory should be done based on the level of your metal mine
-# Default config means that the robot factory will only be planned when your metal mine is level 6 or higher
-robotStartingLevel=6
+# Set it to 6 means that the robot factory will only be planned when your metal mine is level 6 or higher
+robotStartingLevel=0

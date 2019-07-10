@@ -3,6 +3,7 @@ import sys, time, re
 import heapq
 import threading
 import random
+import math
 from bs4 import BeautifulSoup
 from Config import Config
 
@@ -335,7 +336,7 @@ class Planet:
             crystalMine = self.buildingByType('Mine de Cristal').level
             deutMine = self.buildingByType('Synthétiseur de Deutérium').level
             robotFactory = self.buildingByType('Usine de Robots').level
-            if metalMine >= config.robotStartingLevel and metalMine // config.robotRatio >= robotFactory + 1:
+            if metalMine >= config.robotStartingLevel and (metalMine / config.robotRatio > robotFactory) and self.buildingByType('Usine de Robots').upgradeCost[2] <= self.deut:
                 b = 'Usine de Robots'
             elif crystalMine > deutMine + 5:
                 b = 'Synthétiseur de Deutérium'
@@ -358,7 +359,7 @@ class Planet:
         t[0] = (t[0] - self.metal) / self.metalProduction
         t[1] = (t[1] - self.crystal) /  self.crystalProduction
         if self.deutProduction == 0:
-            t[2] = 0 #à remplacer par infini lorsque cette fonction pourra construire des batiments nécéssitant du deut
+            t[2] = (t[2] - self.deut) >= 0 ? 0 : math.inf
         else:
             t[2] = (t[2] - self.deut) /  self.deutProduction
         t.append(0) #to ensure that the task execute time is at least time.time()
