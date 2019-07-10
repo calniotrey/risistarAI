@@ -52,13 +52,13 @@ class Request:
         self.response = None
         self.date = time.time()
         self.content = None
-    
+
     def connect(self):
         self.response = session.post(self.url, data=self.payload)
         self.date = time.time()
-        self.content = self.response.content.decode().replace("\n", "").replace("\t", "")   
+        self.content = self.response.content.decode().replace("\n", "").replace("\t", "")
         return self.response
-    
+
     def saveToFile(self, filePath):
         if (self.response != None):
             with open(filePath, 'wb') as file:
@@ -68,10 +68,10 @@ class Task:
     def __init__(self, t):
         self.t = t
         self.prio = IA.lowPrio
-    
+
     def __gt__(self, other):
         return self.t > other.t
-            
+
     def __ge__(self, other):
         return self.t >= other.t
 
@@ -94,10 +94,10 @@ class IA:
             if not p.isMoon:
                 self.addTask(PlanningTask(time.time(), p))
         self.addTask(ScanFleetsTask(time.time(), self.player, 0))
-    
+
     def addTask(self, t):
         heapq.heappush(self.tasks[t.prio], t)
-    
+
     def run(self):
         stop = False
         while not stop:
@@ -115,7 +115,7 @@ class IA:
             if timeToSleep is not None and timeToSleep > 0:
                 time.sleep(min(timeToSleep, longestWait))
         log(None, "Stopped")
-    
+
     def timeToNextTask(self):
         nextTaskTime = None
         for prio in IA.descendingPrio:
@@ -128,7 +128,7 @@ class IA:
 
     def permaRunDetached(self):
         threading.Thread(target=self.permaRun).start()
-    
+
     def stop(self):
         log(None, "Stopping")
         self._stop = True
@@ -141,7 +141,7 @@ class IA:
             self.player.connexion()
             req.connect()
         self.player.lastRequest = req
-    
+
     def changeCookie(self, newCookie):
         log(None, "Changing cookie : 2Moons = " + newCookie)
         session.cookies.set('2Moons', newCookie, domain=domain)
@@ -151,7 +151,7 @@ class ScanFleetsTask(Task):
         self.t = t + random.random() * randomAdditionnalWait
         self.player = player
         self.prio = IA.middlePrio
-    
+
     def execute(self):
         self.player.ia.player.getFleets()
         self.player.getFleets()
@@ -189,7 +189,7 @@ class BuildingTask(Task):
         self.t = t
         self.bat = bat
         self.prio = IA.lowPrio
-    
+
     def execute(self):
         req = self.bat.upgrade()
         self.bat.planet.scanUsingRequest(req)
@@ -206,7 +206,7 @@ class PlanningTask(Task):
         self.t = t
         self.planet = planet
         self.prio = IA.lowPrio
-    
+
     def execute(self):
         log(self.planet, "Scanning planet")
         self.planet.scan()
@@ -228,7 +228,7 @@ class PlanningTask(Task):
                 log(self.planet, "Planet filled ! Retrying in 10 minutes")
                 newTask = PlanningTask(time.time() + 600, self.planet)
                 self.planet.player.ia.addTask(newTask)
-                
+
 
 class Building:
     buildingCode = {}
@@ -255,20 +255,20 @@ class Building:
             self.id = Building.buildingCode.get(type, None)
         self.upgradeTime = None
         self.upgradeCost = None
-    
+
     def upgradable(self, ressources):
         for i in range(0,3):
             if self.upgradeCost[i] > ressources[i]:
                 return False
         return True
-    
+
     def upgrade(self):
         if self.id != None:
             payload = {'cmd': 'insert', 'building': self.id}
             reqB = Request(buildingPage + "&cp=" + self.planet.id, payload)
             self.planet.player.ia.execRequest(reqB)
             return reqB
-        
+
 class Planet:
     def __init__(self, id, name, position, player):
         self.id = id        #string
@@ -294,22 +294,22 @@ class Planet:
         self.sizeUsed = None
         self.sizeMax = None
         self.ships = {}
-    
+
     def buildingById(self, id):
         for b in self.batiments:
             if b.id == id:
                 return b
-        return None   
+        return None
 
     def buildingByType(self, type):
         for b in self.batiments:
             if b.type == type:
                 return b
         return None
-    
+
     def getNameWithSize(self):
         return self.name + " (" + str(self.sizeUsed) + "/" + str(self.sizeMax) + ")"
-    
+
     def getSize(self):
         reqP = Request(overviewPage + "&cp=" + self.id, {})
         self.player.ia.execRequest(reqP)
@@ -317,7 +317,7 @@ class Planet:
         #parse the size
         self.sizeUsed = int(soup.find(attrs={"title": 'Cases occupées'}).text)
         self.sizeMax = int(soup.find(attrs={"title": 'Cases max. disponibles'}).text)
-    
+
     def rename(self, name): #Returns true if renaming worked
         reqP = Request(renamingPage + name + "&cp=" + self.id, {})
         response = self.player.ia.execRequest(reqP)
@@ -325,7 +325,7 @@ class Planet:
             self.name = name
             return True
         return False
-        
+
     def planBuilding(self):
         b = None
         if self.energy < 0:
@@ -334,7 +334,10 @@ class Planet:
             metalMine = self.buildingByType('Mine de Métal').level
             crystalMine = self.buildingByType('Mine de Cristal').level
             deutMine = self.buildingByType('Synthétiseur de Deutérium').level
-            if crystalMine > deutMine + 5:
+            robotFactory = self.buildingByType('Usine de Robots').level
+            if metalMine >= config.robotStartingLevel and metalMine // config.robotRatio >= robotFactory + 1:
+                b = 'Usine de Robots'
+            elif crystalMine > deutMine + 5:
                 b = 'Synthétiseur de Deutérium'
             else:
                 if metalMine > crystalMine + 2:
@@ -363,10 +366,10 @@ class Planet:
         task = BuildingTask(time.time() + timeToWait, building)
         self.player.ia.addTask(task)
         return task
-    
+
     def upgradableBuildings(self, ressources):
         return [bat for bat in self.batimens if bat.upgradable(ressources)]
-    
+
     def scan(self):
         reqB = Request(buildingPage + "&cp=" + self.id, {})
         self.player.ia.execRequest(reqB)
@@ -440,7 +443,7 @@ class Planet:
         self.crystalStorage = float(soup.find(id="max_crystal").text.replace(".", ""))
         self.deutStorage = float(soup.find(id="max_deuterium").text.replace(".", ""))
         script = soup.find_all("script", attrs={"type":"text/javascript"})[-1].text
-        if self.isMoon: #Moons don't produce        
+        if self.isMoon: #Moons don't produce
             self.metalProduction = 0
             self.crystalProduction = 0
             self.deutProduction = 0
@@ -465,7 +468,7 @@ class Planet:
         ec = self.crystal + self.crystalProduction * t
         ed = self.deut + self.deutProduction * t
         if (takeStorageInAccount):
-            return [min(em, self.metalStorage), min(ec, self.crystalStorage), min(ed, self.deutStorage)] 
+            return [min(em, self.metalStorage), min(ec, self.crystalStorage), min(ed, self.deutStorage)]
         return [em, ec, ed]
 
     def getShips(self):
@@ -581,7 +584,7 @@ class Player:
         self.planets = []
         self.fleets = [] #friendly, own and hostile
         self.ia = ia
-      
+
     def connexion(self):
         payload = {
             'username' : self.pseudo,
@@ -627,7 +630,7 @@ class Player:
                     pl = Planet(id, name, position, self)
                     self.planets.append(pl)
                     pl.scan()
-    
+
     def getFleets(self):
         fleets = []
         overviewRequest = Request(overviewPage, {})
@@ -672,4 +675,3 @@ class Player:
             if p.pos == position:
                 return p
         return None
-

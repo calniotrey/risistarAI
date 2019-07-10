@@ -1,3 +1,4 @@
+config.txt
 secret.txt
 __pycache__/
 *.html
