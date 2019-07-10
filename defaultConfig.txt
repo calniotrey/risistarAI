@@ -2,4 +2,10 @@
 #This too
 domain=beta.risistar.fr
 escapeTarget=1:50:5:1
-
+# Ratio that will determine the level of your robot factory based on the level of your metal mine.
+# Round to the first inferior integer
+# Ex: metal mine 17 -> 17/3 = 5.66 -> robot factory will be upgraded to level 5.
+robotRatio=3
+# Determine when the first level of robot factory should be done based on the level of your metal mine
+# Default config means that the robot factory will only be planned when your metal mine is level 6 or higher
+robotStartingLevel=6
