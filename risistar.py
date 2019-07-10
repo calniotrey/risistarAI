@@ -13,6 +13,10 @@ password = file.readline().replace("\n", "")  # en clair
 file.close()
 
 config = Config.load()
+error = config.getError()
+if error is not None:
+    print(error)
+    sys.exit("Bad configuration !")
 
 domain             = config.domain
 mainURL            = "https://" + domain + "/index.php?"
@@ -91,10 +95,12 @@ class IA:
         self.tasks[IA.middlePrio] = [] #scanning fleets
         self.tasks[IA.highPrio  ] = [] #evading ennemy fleet
         self._stop = False
-        for p in self.player.planets:
-            if not p.isMoon:
-                self.addTask(PlanningTask(time.time(), p))
-        self.addTask(ScanFleetsTask(time.time(), self.player, 0))
+        if config.activateAutoBuild:
+            for p in self.player.planets:
+                if not p.isMoon:
+                    self.addTask(PlanningTask(time.time(), p))
+        if config.activateAutoFleetScan:
+            self.addTask(ScanFleetsTask(time.time(), self.player, 0))
 
     def addTask(self, t):
         heapq.heappush(self.tasks[t.prio], t)
@@ -148,7 +154,7 @@ class IA:
         session.cookies.set('2Moons', newCookie, domain=domain)
 
 class ScanFleetsTask(Task):
-    def __init__(self, t, player, randomAdditionnalWait=10):
+    def __init__(self, t, player, randomAdditionnalWait=config.randomAdditionnalTimeBetweenScans):
         self.t = t + random.random() * randomAdditionnalWait
         self.player = player
         self.prio = IA.middlePrio
@@ -164,7 +170,7 @@ class ScanFleetsTask(Task):
                 log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(fleet.eta - time.time()))
                 ennemyFleetInc = True
                 try:
-                    if (fleet.eta - time.time()) < 60:
+                    if (fleet.eta - time.time()) < 60 and config.activateAutoEvasion:
                         targetPlanet.getShips()
                         targetPlanet.sendFleet(config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
                         targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
@@ -182,7 +188,7 @@ class ScanFleetsTask(Task):
                         fleet.sendBack()
         except:
             print("Erreur lors de l'annulation")
-        newTask = ScanFleetsTask(time.time() + 30, self.player)
+        newTask = ScanFleetsTask(time.time() + config.minimumTimeBetweenScans, self.player)
         self.player.ia.addTask(newTask)
 
 class BuildingTask(Task):
@@ -359,7 +365,7 @@ class Planet:
         t[0] = (t[0] - self.metal) / self.metalProduction
         t[1] = (t[1] - self.crystal) /  self.crystalProduction
         if self.deutProduction == 0:
-            t[2] = (t[2] - self.deut) >= 0 ? 0 : math.inf
+            t[2] = 0 if (self.deut - t[2]) >= 0 else math.inf
         else:
             t[2] = (t[2] - self.deut) /  self.deutProduction
         t.append(0) #to ensure that the task execute time is at least time.time()

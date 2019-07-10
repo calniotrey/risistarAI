@@ -1,7 +1,14 @@
 #This is a comment
-#This too
+
+##Domain
 domain=beta.risistar.fr
-escapeTarget=1:50:5:1
+
+## Features activation
+activateAutoBuild=True
+activateAutoFleetScan=True
+activateAutoEvasion=True
+
+## AutoBuild Settings
 # Ratio that will determine the level of your robot factory based on the level of your metal mine.
 # Round to the first inferior integer
 # Ex: metal mine 17 -> 17/3 = 5.66 -> robot factory will be upgraded to level 5.
@@ -9,3 +16,11 @@ robotRatio=3
 # Determine when the first level of robot factory should be done based on the level of your metal mine
 # Set it to 6 means that the robot factory will only be planned when your metal mine is level 6 or higher
 robotStartingLevel=0
+
+##AutoFleetScan settings
+minimumTimeBetweenScans=30
+randomAdditionnalTimeBetweenScans=10
+
+##AutoEvasion settings
+#This indicates where your fleet will travel to when evading an attack
+escapeTarget=1:50:5:1
