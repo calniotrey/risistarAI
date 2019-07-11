@@ -667,8 +667,10 @@ class Player:
             typeList = fleetSpan.attrs["class"]
             isGoing = (typeList[0] == "flight")
             type = typeList[1]
-            originA = fleetSpan.findAll("a", class_=type)[1]
-            targetA = fleetSpan.findAll("a", class_=type)[2]
+            aList = fleetSpan.findAll("a", class_=type)
+            aList = [a for a in aList if not "tooltip" in a.attrs["class"]]
+            originA = aList[0]
+            targetA = aList[1]
             origin = [int(x) for x in originA.text[1:-1].split(":")]
             if "Lune" in originA.previous:
                 origin.append(3)
