@@ -161,17 +161,20 @@ class ScanFleetsTask(Task):
         self.prio = IA.middlePrio
 
     def execute(self):
-        self.player.ia.player.getFleets()
         self.player.getFleets()
         log(None, "Scanned fleets")
         ennemyFleetInc = False
-        for fleet in self.player.fleets:
+        for fleet in self.player.fleets.values():
             targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
             if fleet.type == "attack" and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
                 log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(fleet.eta - time.time()))
                 ennemyFleetInc = True
                 try:
-                    if (fleet.eta - time.time()) < 60 and config.activateAutoEvasion:
+                    minimumTimeWindowToLaunch = 2 * config.minimumTimeBetweenScans + config.randomAdditionnalTimeBetweenScans
+                    shouldEvade = (fleet.eta - time.time()) < minimumTimeWindowToLaunch
+                    shouldEvade = shouldEvade and config.activateAutoEvasion
+                    shouldEvade = shouldEvade and (time.time() - fleet.firstSpotted) >= config.minimumSpottingTime
+                    if shouldEvade:
                         targetPlanet.getShips()
                         targetPlanet.sendFleet(config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
                         targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
@@ -190,7 +193,7 @@ class ScanFleetsTask(Task):
                     print("ERROR LOL")
         try:
             if not ennemyFleetInc:
-                for fleet in self.player.fleets:
+                for fleet in self.player.fleets.values():
                     if fleet.target == config.escapeTarget:
                         fleet.sendBack()
         except:
@@ -577,6 +580,7 @@ class Fleet:
         self.isGoing = isGoing #either is going to target, or is coming back
         self.type = type
         self.isHostile = False
+        self.firstSpotted = time.time()
 
     def isAttack(self):
         return self.type == "attack"
@@ -603,7 +607,7 @@ class Player:
         self.lastRequest = None
         self.lastExtracedInfosDate = None
         self.planets = []
-        self.fleets = [] #friendly, own and hostile
+        self.fleets = {} #friendly, own and hostile. Dictionnary id=>fleet
         self.ia = ia
 
     def connexion(self):
@@ -653,13 +657,13 @@ class Player:
                     pl.scan()
 
     def getFleets(self):
-        fleets = []
+        fleets = {}
         overviewRequest = Request(overviewPage, {})
         self.ia.execRequest(overviewRequest)
         soup = BeautifulSoup(overviewRequest.response.content, "html.parser")
         #parse all available buildings
         fleetsTd = soup.find_all("td", class_="fleets")
-        for fleetTd in fleetsTd:
+        for fleetTd in fleetsTd[::-1]: #invert the list so the smallest eta overrides the latest
             etaStr = fleetTd.attrs["data-fleet-end-time"]
             eta = float(etaStr)
             id = fleetTd.attrs["id"].split(etaStr)[1] #The etaStr is appended at the end of the id
@@ -686,11 +690,10 @@ class Player:
             else:
                 target.append(1)
             fleet = Fleet(self, id, origin, target, eta, type, isGoing)
-            #originPlanet = self.getOwnPlanetByPosition(origin)
-            # targetPlanet = self.getOwnPlanetByPosition(target)
-            # if type == "attack" and targetPlanet is not None and isGoing: #if we are getting attacked
-            #     fleet.isHostile = True
-            fleets.append(fleet)
+            ancientFleet = self.fleets.get(fleet.id)
+            if ancientFleet is not None:
+                fleet.firstSpotted = ancientFleet.firstSpotted
+            fleets[fleet.id] = fleet
         self.fleets = fleets
 
     def getOwnPlanetByPosition(self, position):

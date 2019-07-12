@@ -11,6 +11,7 @@ class Config:
         self.minimumTimeBetweenScans = None
         self.randomAdditionnalTimeBetweenScans = None
         self.escapeTarget = None
+        self.minimumSpottingTime = None
 
     def load():
         if os.path.isfile("config.txt"):
@@ -46,6 +47,8 @@ class Config:
                     config.randomAdditionnalTimeBetweenScans = int(value)
                 elif key == "escapeTarget":
                     config.escapeTarget = [int(x) for x in value.split(":")]
+                elif key == "minimumSpottingTime":
+                    config.minimumSpottingTime = int(value)
             l = file.readline()
         file.close()
         return config
