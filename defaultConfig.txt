@@ -24,3 +24,4 @@ randomAdditionnalTimeBetweenScans=10
 ##AutoEvasion settings
 #This indicates where your fleet will travel to when evading an attack
 escapeTarget=1:50:5:1
+minimumSpottingTime=120
