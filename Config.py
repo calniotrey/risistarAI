@@ -14,13 +14,14 @@ class Config:
         self.minimumSpottingTime = None
 
     def load():
-        if os.path.isfile("config.txt"):
-            return Config.loadFromFile("config.txt")
-        return Config.loadFromFile("defaultConfig.txt")
-
-
-    def loadFromFile(filePath):
         config = Config()
+        config.loadFromFile("defaultConfig.txt")
+        if os.path.isfile("config.txt"):
+            config.loadFromFile("config.txt")
+        return config
+
+
+    def loadFromFile(self, filePath):
         file = open(filePath)
         l = file.readline()
         while l != "":
@@ -30,28 +31,27 @@ class Config:
                 key = s[0].replace(" ", "")
                 value = s[1]
                 if key == "domain":
-                    config.domain = value
+                    self.domain = value
                 elif key == "activateAutoBuild":
-                    config.activateAutoBuild = value == "True"
+                    self.activateAutoBuild = value == "True"
                 elif key == "activateAutoFleetScan":
-                    config.activateAutoFleetScan = value == "True"
+                    self.activateAutoFleetScan = value == "True"
                 elif key == "activateAutoEvasion":
-                    config.activateAutoEvasion = value == "True"
+                    self.activateAutoEvasion = value == "True"
                 elif key == "robotRatio":
-                    config.robotRatio = int(value)
+                    self.robotRatio = int(value)
                 elif key == "robotStartingLevel":
-                    config.robotStartingLevel = int(value)
+                    self.robotStartingLevel = int(value)
                 elif key == "minimumTimeBetweenScans":
-                    config.minimumTimeBetweenScans = int(value)
+                    self.minimumTimeBetweenScans = int(value)
                 elif key == "randomAdditionnalTimeBetweenScans":
-                    config.randomAdditionnalTimeBetweenScans = int(value)
+                    self.randomAdditionnalTimeBetweenScans = int(value)
                 elif key == "escapeTarget":
-                    config.escapeTarget = [int(x) for x in value.split(":")]
+                    self.escapeTarget = [int(x) for x in value.split(":")]
                 elif key == "minimumSpottingTime":
-                    config.minimumSpottingTime = int(value)
+                    self.minimumSpottingTime = int(value)
             l = file.readline()
         file.close()
-        return config
 
     def getError(self):
         if None in self.__dict__.values():
