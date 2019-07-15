@@ -13,6 +13,7 @@ class Config:
         self.randomAdditionnalTimeBetweenScans = None
         self.webhookUrl = None
         self.idToPing = None
+        self.customAttackNotificationMessage = None
         self.escapeTarget = None
         self.minimumSpottingTime = None
 
@@ -55,6 +56,8 @@ class Config:
                     self.webhookUrl = value
                 elif key == "idToPing":
                     self.idToPing = value
+                elif key == "customAttackNotificationMessage":
+                    self.customAttackNotificationMessage = value
                 elif key == "escapeTarget":
                     self.escapeTarget = [int(x) for x in value.split(":")]
                 elif key == "minimumSpottingTime":

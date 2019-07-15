@@ -176,7 +176,11 @@ class ScanFleetsTask(Task):
                 ennemyFleetInc = True
                 try:
                     if config.activateDefenderDiscordPing:
-                        pingUser("Attack on " + targetPlanet.getPosAsString())
+                        message = config.customAttackNotificationMessage
+                        message = message.replace("{targetPlanet.name}", targetPlanet.name)
+                        message = message.replace("{targetPlanet.position}", targetPlanet.getPosAsString())
+                        message = message.replace("{fleet.ttd}", str(int(fleet.eta - time.time())))
+                        pingUser(message)
                     minimumTimeWindowToLaunch = 2 * config.minimumTimeBetweenScans + config.randomAdditionnalTimeBetweenScans
                     shouldEvade = (fleet.eta - time.time()) < minimumTimeWindowToLaunch
                     shouldEvade = shouldEvade and config.activateAutoEvasion
