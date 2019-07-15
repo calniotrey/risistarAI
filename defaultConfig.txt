@@ -6,6 +6,7 @@ domain=beta.risistar.fr
 ## Features activation
 activateAutoBuild=True
 activateAutoFleetScan=True
+activateDefenderDiscordPing=False
 activateAutoEvasion=True
 
 ## AutoBuild Settings
@@ -21,7 +22,14 @@ robotStartingLevel=0
 minimumTimeBetweenScans=30
 randomAdditionnalTimeBetweenScans=10
 
+##Ennemy fleet discord ping
+webhookUrl=None
+idToPing=None
+#the message to be sent
+#it can use targetPlanet.position or .name or fleet.ttd
+customAttackNotificationMessage=Attack on {targetPlanet.name} ({targetPlanet.position}) in {fleet.ttd}
+
 ##AutoEvasion settings
 #This indicates where your fleet will travel to when evading an attack
 escapeTarget=1:50:5:1
-minimumSpottingTime=120
+minimumSpottingTime=300

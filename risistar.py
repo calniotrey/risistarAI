@@ -51,6 +51,11 @@ def log(planet, str):
 def setupRisistarCookie(cookieValue):
     session.cookies.set('2Moons', cookieValue, domain=domain)
 
+def pingUser(message=""):
+    data = {}
+    data["content"] = "<@" + config.idToPing + "> " + message
+    session.post(config.webhookUrl, data)
+
 class Request:
     def __init__(self, url, payload):
         self.url = url
@@ -170,6 +175,12 @@ class ScanFleetsTask(Task):
                 log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(fleet.eta - time.time()))
                 ennemyFleetInc = True
                 try:
+                    if config.activateDefenderDiscordPing:
+                        message = config.customAttackNotificationMessage
+                        message = message.replace("{targetPlanet.name}", targetPlanet.name)
+                        message = message.replace("{targetPlanet.position}", targetPlanet.getPosAsString())
+                        message = message.replace("{fleet.ttd}", str(int(fleet.eta - time.time())))
+                        pingUser(message)
                     minimumTimeWindowToLaunch = 2 * config.minimumTimeBetweenScans + config.randomAdditionnalTimeBetweenScans
                     shouldEvade = (fleet.eta - time.time()) < minimumTimeWindowToLaunch
                     shouldEvade = shouldEvade and config.activateAutoEvasion
@@ -560,6 +571,9 @@ class Planet:
             payload["fmenge[" + str(id) + "]"] = ships[id]
         buildShipReq = Request(buildShipPage + "&cp=" + self.id, payload)
         self.player.ia.execRequest(buildShipReq)
+
+    def getPosAsString(self):
+        return str(self.pos[0]) + ":" + str(self.pos[1]) + ":" + str(self.pos[2]) + ":" + str(self.pos[3])
 
 
 class Fleet:
