@@ -3,6 +3,7 @@ import os.path
 class Config:
     def __init__(self):
         self.domain = None
+        self.userAgent = None
         self.activateAutoBuild = None
         self.activateAutoFleetScan = None
         self.activateDefenderDiscordPing = None
@@ -36,6 +37,8 @@ class Config:
                 value = s[1]
                 if key == "domain":
                     self.domain = value
+                elif key == "userAgent":
+                    self.userAgent = value
                 elif key == "activateAutoBuild":
                     self.activateAutoBuild = value == "True"
                 elif key == "activateAutoFleetScan":
