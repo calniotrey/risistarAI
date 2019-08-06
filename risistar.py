@@ -32,7 +32,8 @@ buildDefPage       = "https://" + domain + "/game.php?page=shipyard&mode=defense
 buildShipPage      = "https://" + domain + "/game.php?page=shipyard&mode=fleet"
 
 session = requests.session()
-session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0'})
+if config.userAgent is not None:
+    session.headers.update({'User-Agent': config.userAgent})
 
 planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
 buildingNameParser = re.compile(r'''\A([^\(]+)(?:\(.* (\d*))?''')
