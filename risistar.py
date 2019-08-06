@@ -34,13 +34,13 @@ buildShipPage      = "https://" + domain + "/game.php?page=shipyard&mode=fleet"
 session = requests.session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0'})
 
-planetNameParser = re.compile(r'''>(.*) \[(.*)\]''')
-buildingNameParser = re.compile(r'''\A([^\(]+)(?:\(.* (\d*))?''')
-metalProductionParser = re.compile(r'''production: ((?:\d|\.)+),\s+valueElem: "current_metal"''')
-crystalProductionParser = re.compile(r'''production: ((?:\d|\.)+),\s+valueElem: "current_crystal"''')
-deutProductionParser = re.compile(r'''production: ((?:\d|\.)+),\s+valueElem: "current_deuterium"''')
-ressourcesParser = re.compile(r'''(\d+) (\w+);''')
-energyParser = re.compile(r'''(-?\d+)./.(\d+)''')
+planetNameParser = re.compile(r'>(.*) \[(.*)\]')
+buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
+metalProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_metal"')
+crystalProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_crystal"')
+deutProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_deuterium"')
+ressourcesParser = re.compile(r'(\d+) (\w+);')
+energyParser = re.compile(r'(-?\d+)./.(\d+)')
 
 def log(planet, str):
     if planet != None:
