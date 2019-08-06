@@ -1,10 +1,12 @@
 import requests
 import sys, time, re
+import os
 import heapq
 import threading
 import random
 import math
 from bs4 import BeautifulSoup
+from BuildOrder import BuildOrder
 from Codes import Codes
 from Config import Config
 from Research import Research
@@ -77,13 +79,43 @@ class IA:
         self.tasks[IA.lowPrio   ] = [] #building, technos ...
         self.tasks[IA.middlePrio] = [] #scanning fleets
         self.tasks[IA.highPrio  ] = [] #evading ennemy fleet
+        self.customBuildOrderDict = {}
         self._stop = False
         if self.config.activateAutoBuild:
+            self.loadCustomBuildOrders()
+            self.pairCustomBuildOrdersToPlanets()
             for p in self.player.planets:
                 if not p.isMoon:
                     self.addTask(PlanningTask(time.time(), p))
         if self.config.activateAutoFleetScan:
             self.addTask(ScanFleetsTask(time.time(), self.player, 0))
+
+    def loadCustomBuildOrders(self):
+        buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.config.customBuildOrdersDirectoryName)
+        if os.path.exists(buildOrderDirectory):
+            buildOrderFiles = [f for f in os.listdir(buildOrderDirectory) if os.path.isfile(os.path.join(buildOrderDirectory, f))]
+            for buildOrderFile in buildOrderFiles:
+                buildOrderName = buildOrderFile.split(".")[0]
+                buildOrderFilePath = os.path.join(buildOrderDirectory, buildOrderFile)
+                buildOrder = BuildOrder(buildOrderName, filePath=buildOrderFilePath)
+                self.customBuildOrderDict[buildOrderName] = buildOrder
+
+    def pairCustomBuildOrdersToPlanets(self):
+        with open(self.config.customBuildOrdersPairingFile) as file:
+            l = file.readline()
+            while l != "":
+                l = l.replace("\n", "")
+                if len(l) and l[0] != "#":
+                    s = l.split("=")
+                    cBOName = s[-1]
+                    customBuildOrder = self.customBuildOrderDict.get(cBOName)
+                    if customBuildOrder:
+                        planetName = s[0]
+                        for planetNameAddon in s[1:-1]:
+                            planetName += "=" + planetNameAddon #allows spaces in the planet name
+                        for planet in self.player.getOwnPlanetsByName(planetName):
+                            planet.customBuildOrder = customBuildOrder
+                l = file.readline()
 
     def addTask(self, t):
         heapq.heappush(self.tasks[t.prio], t)
@@ -235,8 +267,9 @@ class PlanningTask(Task):
             if self.planet.sizeUsed < self.planet.sizeMax:
                 log(self.planet, "Planning building")
                 newTask = self.planet.planBuilding()
-                log(self.planet, "Done planning building")
-                log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
+                if newTask is not None:
+                    log(self.planet, "Done planning building")
+                    log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
             else:
                 log(self.planet, "Planet filled ! Retrying in 10 minutes")
                 newTask = PlanningTask(time.time() + 600, self.planet)
@@ -307,12 +340,19 @@ class Planet:
         self.sizeUsed = None
         self.sizeMax = None
         self.ships = {}
+        self.customBuildOrder = None
 
     def buildingById(self, id):
         for b in self.batiments:
             if b.id == id:
                 return b
         return None
+
+    def buildingLevelById(self, id): #returns the level or 0 if the building isn't build yet
+        for b in self.batiments:
+            if b.id == id:
+                return b.level
+        return 0
 
     def buildingByType(self, type):
         for b in self.batiments:
@@ -341,6 +381,35 @@ class Planet:
 
     def planBuilding(self):
         config = self.player.ia.config #to make lines smaller
+        buildingId = None
+        if config.activateCustomBuildOrders and self.customBuildOrder is not None:
+            buildingId = self.customBuildOrder.nextBuilding(self) #id of the building to build
+            if buildingId is None:
+                if self.customBuildOrder.useDefaultBuildPlanWhenEmpty:
+                    buildingId = self.defaultPlanBuildingWithoutHangars()
+                else:
+                    log(self, "No more building planned by the custom build order !")
+                    return None
+        else:
+            buildingId = self.defaultPlanBuildingWithoutHangars()
+        buildingId = self.planHangarsInstead(buildingId)
+        building = self.buildingById(buildingId)
+        #now we need to know how much to wait
+        t = [x for x in building.upgradeCost] #the ressources needed
+        t[0] = (t[0] - self.metal) / self.metalProduction
+        t[1] = (t[1] - self.crystal) /  self.crystalProduction
+        if self.deutProduction == 0:
+            t[2] = 0 if (self.deut - t[2]) >= 0 else math.inf
+        else:
+            t[2] = (t[2] - self.deut) /  self.deutProduction
+        t.append(0) #to ensure that the task execute time is at least time.time()
+        timeToWait = max(t)
+        task = BuildingTask(time.time() + timeToWait, building)
+        self.player.ia.addTask(task)
+        return task
+
+    def defaultPlanBuildingWithoutHangars(self):
+        config = self.player.ia.config #to make lines smaller
         b = None
         if self.energy < 0:
             b = 'Centrale éléctrique Solaire'
@@ -358,7 +427,11 @@ class Planet:
                     b = 'Mine de Cristal'
                 else:
                     b = 'Mine de Métal'
-        building = self.buildingByType(b)
+        buildingId = Codes.strToId[b]
+        return buildingId
+
+    def planHangarsInstead(self, b):
+        building = self.buildingById(b)
         while not building.upgradable([self.metalStorage, self.crystalStorage, self.deutStorage]):
             # on ne peut pas stocker assez de ressources pour le construire
             b = 'Hangar de Métal'
@@ -367,19 +440,8 @@ class Planet:
             elif building.upgradeCost[2] > self.deutStorage:
                 b = 'Réservoir de Deutérium'
             building = self.buildingByType(b)
-        #now we need to know how much to wait
-        t = [x for x in building.upgradeCost] #the ressources needed
-        t[0] = (t[0] - self.metal) / self.metalProduction
-        t[1] = (t[1] - self.crystal) /  self.crystalProduction
-        if self.deutProduction == 0:
-            t[2] = 0 if (self.deut - t[2]) >= 0 else math.inf
-        else:
-            t[2] = (t[2] - self.deut) /  self.deutProduction
-        t.append(0) #to ensure that the task execute time is at least time.time()
-        timeToWait = max(t)
-        task = BuildingTask(time.time() + timeToWait, building)
-        self.player.ia.addTask(task)
-        return task
+        buildingId = building.id
+        return buildingId
 
     def upgradableBuildings(self, ressources):
         return [bat for bat in self.batimens if bat.upgradable(ressources)]
@@ -437,9 +499,7 @@ class Planet:
                     if r[1] == "Deut":
                         res[2] = int(r[0])
                 form = divs[4].find("input", attrs={"name": "building"})
-                id = None
-                if form != None:
-                    id = form.attrs['value']
+                id = Codes.strToId.get(name)
                 b = Building(name, id, self, level)
                 b.upgradeCost = res
                 b.upgradeTime = upgradeTime
@@ -702,6 +762,13 @@ class Player:
             if p.pos == position:
                 return p
         return None
+
+    def getOwnPlanetsByName(self, name):
+        res = []
+        for p in self.planets:
+            if p.name == name:
+                res.append(p)
+        return res
 
     def scanResearchs(self):
         researchRequest = Request(self.ia.researchPage, {})

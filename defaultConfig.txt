@@ -6,6 +6,7 @@ userAgent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Fire
 
 ## Features activation
 activateAutoBuild=True
+activateCustomBuildOrders=True
 activateAutoFleetScan=True
 activateDefenderDiscordPing=False
 activateAutoEvasion=True
@@ -18,6 +19,10 @@ robotRatio=3
 # Determine when the first level of robot factory should be done based on the level of your metal mine
 # Set it to 6 means that the robot factory will only be planned when your metal mine is level 6 or higher
 robotStartingLevel=0
+
+##Custom build order settings
+customBuildOrdersDirectoryName=buildOrders
+customBuildOrdersPairingFile=customBuildOrdersPairingFile.txt
 
 ##AutoFleetScan settings
 minimumTimeBetweenScans=30

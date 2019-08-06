@@ -5,11 +5,14 @@ class Config:
         self.domain = None
         self.userAgent = None
         self.activateAutoBuild = None
+        self.activateCustomBuildOrders = None
         self.activateAutoFleetScan = None
         self.activateDefenderDiscordPing = None
         self.activateAutoEvasion = None
         self.robotRatio = None
         self.robotStartingLevel = None
+        self.customBuildOrdersDirectoryName = None
+        self.customBuildOrdersPairingFile = None
         self.minimumTimeBetweenScans = None
         self.randomAdditionnalTimeBetweenScans = None
         self.webhookUrl = None
@@ -41,6 +44,8 @@ class Config:
                         self.userAgent = value
                     elif key == "activateAutoBuild":
                         self.activateAutoBuild = value == "True"
+                    elif key == "activateCustomBuildOrders":
+                        self.activateCustomBuildOrders = value == "True"
                     elif key == "activateAutoFleetScan":
                         self.activateAutoFleetScan = value == "True"
                     elif key == "activateDefenderDiscordPing":
@@ -51,6 +56,10 @@ class Config:
                         self.robotRatio = int(value)
                     elif key == "robotStartingLevel":
                         self.robotStartingLevel = int(value)
+                    elif key == "customBuildOrdersDirectoryName":
+                        self.customBuildOrdersDirectoryName = value
+                    elif key == "customBuildOrdersPairingFile":
+                        self.customBuildOrdersPairingFile = value
                     elif key == "minimumTimeBetweenScans":
                         self.minimumTimeBetweenScans = int(value)
                     elif key == "randomAdditionnalTimeBetweenScans":
@@ -72,6 +81,12 @@ class Config:
     def getError(self):
         if None in self.__dict__.values():
             return "Some settings aren't set !"
+        if self.activateCustomBuildOrders and not self.activateAutoBuild:
+            return "Custom build orders is activated but not auto build !"
+        if self.activateCustomBuildOrders and self.customBuildOrdersDirectoryName is None:
+            return "Custom build orders is activated but the build orders directory isn't specified !"
+        if self.activateCustomBuildOrders and self.customBuildOrdersPairingFile is None:
+            return "Custom build orders is activated but the build orders pairing file isn't specified !"
         if self.activateAutoEvasion and not self.activateAutoFleetScan:
             return "Auto evasion is activated but not auto fleet scan !"
         if self.activateDefenderDiscordPing and not self.activateAutoFleetScan:

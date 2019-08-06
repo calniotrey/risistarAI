@@ -1,0 +1,13 @@
+#This is a comment
+#If all buildings listed here are built, should the ai use it's own build logic ?
+useDefaultBuildPlanWhenEmpty=True
+
+#After all settings, the buildings list begins :
+Buildings:
+#Put the id of the building to build on each line
+1
+1
+2
+
+#Comments and empty lines are allowed
+4
