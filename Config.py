@@ -17,6 +17,7 @@ class Config:
         self.customAttackNotificationMessage = None
         self.escapeTarget = None
         self.minimumSpottingTime = None
+        self.researchPlanetId = None
 
     def load():
         config = Config()
@@ -65,6 +66,8 @@ class Config:
                     self.escapeTarget = [int(x) for x in value.split(":")]
                 elif key == "minimumSpottingTime":
                     self.minimumSpottingTime = int(value)
+                elif key == "researchPlanetId":
+                    self.researchPlanetId = int(value)
             l = file.readline()
         file.close()
 
