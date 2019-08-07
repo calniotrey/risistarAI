@@ -10,10 +10,9 @@ from Config import Config
 from Research import Research
 from Request import Request
 
-file = open("secret.txt")
-pseudo = file.readline().replace("\n", "")
-password = file.readline().replace("\n", "")  # en clair
-file.close()
+with open("secret.txt") as file:
+    pseudo = file.readline().replace("\n", "")
+    password = file.readline().replace("\n", "")  # en clair
 
 def log(planet, str):
     if planet != None:
