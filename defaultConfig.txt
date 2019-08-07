@@ -34,3 +34,5 @@ customAttackNotificationMessage=Attack on {targetPlanet.name} ({targetPlanet.pos
 #This indicates where your fleet will travel to when evading an attack
 escapeTarget=1:50:5:1
 minimumSpottingTime=300
+
+researchPlanetId=0
