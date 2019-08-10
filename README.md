@@ -35,6 +35,18 @@ It will only build mines, solar plant, hangars and robot factory.
 In the future, we plan to make the AI build all the types of buildings and follow different build orders (a research planet, several mining planets ...).
 Additionally, we are thinking about allowing the AI to send resources between planets to speed up the constructions (currently all planets are independent).
 
+### customBuildOrder
+The AI will follow a custom build order instead of the default build decisions.
+By setting `useDefaultBuildPlanWhenEmpty=True` in the build order file, it will fall back to the default build decisions when all buildings specified by the custom build order are built.
+You can add more custom build orders in the folder (which name is defined in the configurations files).
+Do not use an "=" in the name of a custom build order file (everything else *should* be ok).
+The AI will give each planet a custom build order according to the planet name.
+To specify which planet name should add which custom build order, you can alter the `customBuildOrdersPairingFile.txt` (name of the file defined in the configuration).
+**DO NOT** add buildings before the needed buildings/researchs/officers for it are taken.
+
+In the future, we plan to add a check if the building is buildable (ie. if the buildings/researchs/officiers it needs are taken).
+Additionally, we are thinking about adding a settings which will allow if the current building isn't buildable to build the next one instead.
+
 ### AutoFleetScan
 The AI will scan all fleets. When an incoming enemy attacking fleet is detected, it will log it.
 Please leave a high time between scans (at least 30 seconds, 1 minute is better).
@@ -91,8 +103,9 @@ If there is just an error such as "File not found", make sure 'secret.txt' and '
 If the error persists, make sure you are launching 'start.py' from the folder containing it.
 If "Bad configuration !" is printed, it means your configuration isn't coherent. There will be another printed string before it which will indicates how to solve it.
 Other errors :
-⋅⋅* `Login/Password incorrect` : Your credentials are incorrect (make sure the domain in the config is the right one)
-⋅⋅* `Bad Cookie. Clearing session cookies and trying to reconnect using credentials` : You were disconnected or used a bad cookie and the AI will login. Not an error.
+  * `Login/Password incorrect` : Your credentials are incorrect (make sure the domain in the config is the right one)
+  * `Bad Cookie. Clearing session cookies and trying to reconnect using credentials` : You were disconnected or used a bad cookie and the AI will login. Not an error.
+  * `No more building planned by the custom build order !` : You are using a custom build order and it doesn't fall back to the default build when all the buildings are built. You can fix this by setting `useDefaultBuildPlanWhenEmpty=True`
 
 #### Errors you can't do much about :
 In this case just send us your logs and a few informations (such as if you were doing things on the game alongside the AI).

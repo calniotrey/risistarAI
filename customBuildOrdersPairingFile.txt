@@ -1,0 +1,8 @@
+#This is a comment
+
+#Left of =, name of the planet
+#Right of =, name of the custom build order
+#"=" is allowed in the planet name, the last one is used to split
+#No "=" is allowed in the custom build order name
+Main Planet=Mother
+Colony=Colony
