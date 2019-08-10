@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from BuildOrder import BuildOrder
 from Codes import Codes
 from Config import Config
+from Officer import Officer
 from Research import Research
 from Request import Request
 
@@ -53,6 +54,7 @@ class IA:
     buildDefPage       = "https://" + domain + "/game.php?page=shipyard&mode=defense"
     buildShipPage      = "https://" + domain + "/game.php?page=shipyard&mode=fleet"
     researchPage       = "https://" + domain + "/game.php?page=research"
+    officerPage        = "https://" + domain + "/game.php?page=officier"
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
@@ -74,7 +76,7 @@ class IA:
             self.changeCookie(lastCookie)
         self.player = Player(pseudo, password, "Risistar", self)
         self.player.connexion()
-        self.player.extractInfos(planets=True)
+        self.player.extractInfos(planets=True, darkMatter=True)
         self.tasks = {}
         self.tasks[IA.lowPrio   ] = [] #building, technos ...
         self.tasks[IA.middlePrio] = [] #scanning fleets
@@ -699,7 +701,7 @@ class Player:
             content = request.content
             soup = BeautifulSoup(content, "html.parser")
             if darkMatter:
-                self.darkMatter = float(soup.find(id="current_darkmatter").attrs['data-real'])
+                self.darkMatter = int(soup.find(id="current_darkmatter").attrs['data-real'])
                 self.lastExtracedInfosDate = time.time()
             if planets:
                 ps = soup.find(id="planetSelector").find_all("option")
@@ -830,3 +832,8 @@ class Player:
                 research.upgradeCost = res
                 research.upgradeTime = upgradeTime
                 self.researchs[id] = research
+
+    def scanOfficers(self):
+        officerRequest = Request(self.ia.officerPage, {})
+        self.ia.execRequest(officerRequest)
+        self.officers = Officer.getOfficersUsingLastRequest(self)
