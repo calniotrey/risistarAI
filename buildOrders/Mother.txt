@@ -1,13 +1,57 @@
 #This is a comment
+#Comments and empty lines are allowed
+
+#This BO follows https://ogame.fandom.com/wiki/Quick_Start_Guide
+
 #If all buildings listed here are built, should the ai use it's own build logic ?
 useDefaultBuildPlanWhenEmpty=True
 
 #After all settings, the buildings list begins :
 Buildings:
 #Put the id of the building to build on each line
+#1 metal mine
+#2 crystal mine
+#3 deut mine
+#4 solar plant
+#14 robotic factory
+#31 laboratory
+#21 shipyard
+4
 1
+1
+4
+1
+1
+4
+2
+4
 1
 2
-
-#Comments and empty lines are allowed
+2
 4
+3
+2
+4
+1
+1
+4
+2
+3
+4
+3
+3
+4
+3
+14
+14
+31
+21
+2
+21
+4
+3
+1
+4
+2
+1
+

@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from Codes import Codes
 from Request import Request
+from UtilitiesFunctions import log
 
 class Officer:
     def __init__(self, type, id, player, level=0):
@@ -42,6 +43,8 @@ class Officer:
             id = Codes.strToId.get(name)
             if form != None and id == None:
                 id = form.attrs['value']
+                if id == None:
+                    log(None, "Unknown officer with no id parsed.", isError=True)
             officer = Officer(name, id, player, level)
             officer.darkMatterCost = dmRequired
             officers[id] = officer

@@ -9,6 +9,7 @@ class Config:
         self.activateAutoFleetScan = None
         self.activateDefenderDiscordPing = None
         self.activateAutoEvasion = None
+        self.activatePickingOfficers = None
         self.robotRatio = None
         self.robotStartingLevel = None
         self.customBuildOrdersDirectoryName = None
@@ -20,6 +21,7 @@ class Config:
         self.customAttackNotificationMessage = None
         self.escapeTarget = None
         self.minimumSpottingTime = None
+        self.officersPickingOrderFile = None
         self.researchPlanetId = None
 
     def load():
@@ -52,6 +54,8 @@ class Config:
                         self.activateDefenderDiscordPing = value == "True"
                     elif key == "activateAutoEvasion":
                         self.activateAutoEvasion = value == "True"
+                    elif key == "activatePickingOfficers":
+                        self.activatePickingOfficers = value == "True"
                     elif key == "robotRatio":
                         self.robotRatio = int(value)
                     elif key == "robotStartingLevel":
@@ -74,6 +78,8 @@ class Config:
                         self.escapeTarget = [int(x) for x in value.split(":")]
                     elif key == "minimumSpottingTime":
                         self.minimumSpottingTime = int(value)
+                    elif key == "officersPickingOrderFile":
+                        self.officersPickingOrderFile = value
                     elif key == "researchPlanetId":
                         self.researchPlanetId = int(value)
                 l = file.readline()
@@ -95,4 +101,6 @@ class Config:
             return "Defender ping is activated but the webhook url isn't configurated !"
         if self.activateDefenderDiscordPing and self.idToPing == "None":
             return "Defender ping is activated but the user id to ping isn't configurated !"
+        if self.activatePickingOfficers and self.officersPickingOrderFile is None:
+            return "Officer picking is activated but the order isn't configurated !"
         return None
