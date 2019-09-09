@@ -6,10 +6,11 @@ userAgent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Fire
 
 ## Features activation
 activateAutoBuild=True
-activateCustomBuildOrders=True
+activateCustomBuildOrders=False
 activateAutoFleetScan=True
 activateDefenderDiscordPing=False
-activateAutoEvasion=True
+activateAutoEvasion=False
+activatePickingOfficers=False
 
 ## AutoBuild Settings
 # Ratio that will determine the level of your robot factory based on the level of your metal mine.
@@ -39,5 +40,8 @@ customAttackNotificationMessage=Attack on {targetPlanet.name} ({targetPlanet.pos
 #This indicates where your fleet will travel to when evading an attack
 escapeTarget=1:50:5:1
 minimumSpottingTime=300
+
+##Getting Officers settings
+officersPickingOrderFile=officersPickingOrder.txt
 
 researchPlanetId=0
