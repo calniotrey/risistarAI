@@ -9,6 +9,7 @@ from BuildOrder import BuildOrder
 from Config import Config
 from Player import Player
 from tasks.Task import Task
+from tasks.PickOfficerTask import PickOfficerTask
 from tasks.PlanningTask import PlanningTask
 from tasks.ScanFleetsTask import ScanFleetsTask
 from UtilitiesFunctions import log
@@ -70,6 +71,8 @@ class IA:
                     self.addTask(PlanningTask(time.time(), p))
         if self.config.activateAutoFleetScan:
             self.addTask(ScanFleetsTask(time.time(), self.player, 0))
+        if self.config.activatePickingOfficers:
+            self.addTask(PickOfficerTask(time.time(), self.player))
 
     def loadCustomBuildOrders(self):
         buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.config.customBuildOrdersDirectoryName)

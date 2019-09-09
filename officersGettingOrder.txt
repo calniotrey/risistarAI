@@ -1,4 +1,0 @@
-#This is a comment
-#Comments and empty lines are allowed
-
-601:5

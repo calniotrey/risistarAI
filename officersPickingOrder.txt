@@ -1,0 +1,12 @@
+#This is a comment
+#Comments and empty lines are allowed
+#Each line must contain id:level
+
+
+601:20
+603:2
+605:3
+606:3
+607:2
+603:8
+602:20

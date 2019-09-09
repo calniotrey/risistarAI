@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from Codes import Codes
 from Fleet import Fleet
 from Officer import Officer
+from OfficersPickingOrder import OfficersPickingOrder
 from Planet import Planet
 from Request import Request
 from Research import Research
@@ -19,8 +20,12 @@ class Player:
         self.lastExtracedInfosDate = None
         self.planets = []
         self.fleets = {} #friendly, own and hostile. Dictionnary id=>fleet
+        self.officers = {}
         self.researchs = {}
         self.ia = ia
+        self.officersPickingOrder = None
+        if ia.config.activatePickingOfficers:
+            self.officersPickingOrder = OfficersPickingOrder(filePath=ia.config.officersPickingOrderFile)
 
     def connexion(self):
         payload = {
@@ -186,3 +191,6 @@ class Player:
         officerRequest = Request(self.ia.officerPage, {})
         self.ia.execRequest(officerRequest)
         self.officers = Officer.getOfficersUsingLastRequest(self)
+
+    def chooseOfficerToPick(self): #doesn't check if enough DM
+        return self.officersPickingOrder.nextOfficer(self.officers)
