@@ -11,6 +11,7 @@ from Config import Config
 from Player import Player
 from Request import Request
 from tasks.Task import Task
+from tasks.CheckAchievementsTask import CheckAchievementsTask
 from tasks.PickOfficerTask import PickOfficerTask
 from tasks.PlanningTask import PlanningTask
 from tasks.ScanFleetsTask import ScanFleetsTask
@@ -43,6 +44,7 @@ class IA:
     officerPage         = "https://" + domain + "/game.php?page=officier"
     battleSimulatorPage = "https://" + domain + "/game.php?page=battleSimulator&mode=send"
     battleRapportPage   = "https://" + domain + "/game.php?page=raport&raport="
+    achievementsPage    = "https://" + domain + "/game.php?page=achievements"
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
@@ -67,6 +69,7 @@ class IA:
         self.tasks[Task.highPrio  ] = [] #evading ennemy fleet
         self.customBuildOrderDict = {}
         self._stop = False
+        self.addTask(CheckAchievementsTask(time.time(), self.player))
         if self.config.activateAutoBuild:
             self.loadCustomBuildOrders()
             self.pairCustomBuildOrdersToPlanets()
