@@ -6,8 +6,10 @@ import sys
 import threading
 import time
 from BuildOrder import BuildOrder
+from CombatReport import CombatReport
 from Config import Config
 from Player import Player
+from Request import Request
 from tasks.Task import Task
 from tasks.PickOfficerTask import PickOfficerTask
 from tasks.PlanningTask import PlanningTask
@@ -25,20 +27,22 @@ class IA:
         print(error)
         sys.exit("Bad configuration !")
 
-    domain             = config.domain
-    mainURL            = "https://" + domain + "/index.php?"
-    buildingPage       = "https://" + domain + "/game.php?page=buildings"
-    overviewPage       = "https://" + domain + "/game.php?page=overview"
-    renamingPage       = "https://" + domain + "/game.php?page=overview&mode=rename&name="
-    sendBackFleetPage  = "https://" + domain + "/game.php?page=fleetTable&action=sendfleetback"
-    sendFleetStep1Page = "https://" + domain + "/game.php?page=fleetStep1"
-    sendFleetStep2Page = "https://" + domain + "/game.php?page=fleetStep2"
-    sendFleetStep3Page = "https://" + domain + "/game.php?page=fleetStep3"
-    getShipsPage       = "https://" + domain + "/game.php?page=fleetTable"
-    buildDefPage       = "https://" + domain + "/game.php?page=shipyard&mode=defense"
-    buildShipPage      = "https://" + domain + "/game.php?page=shipyard&mode=fleet"
-    researchPage       = "https://" + domain + "/game.php?page=research"
-    officerPage        = "https://" + domain + "/game.php?page=officier"
+    domain              = config.domain
+    mainURL             = "https://" + domain + "/index.php?"
+    buildingPage        = "https://" + domain + "/game.php?page=buildings"
+    overviewPage        = "https://" + domain + "/game.php?page=overview"
+    renamingPage        = "https://" + domain + "/game.php?page=overview&mode=rename&name="
+    sendBackFleetPage   = "https://" + domain + "/game.php?page=fleetTable&action=sendfleetback"
+    sendFleetStep1Page  = "https://" + domain + "/game.php?page=fleetStep1"
+    sendFleetStep2Page  = "https://" + domain + "/game.php?page=fleetStep2"
+    sendFleetStep3Page  = "https://" + domain + "/game.php?page=fleetStep3"
+    scanShipsPage       = "https://" + domain + "/game.php?page=fleetTable"
+    buildDefPage        = "https://" + domain + "/game.php?page=shipyard&mode=defense"
+    buildShipPage       = "https://" + domain + "/game.php?page=shipyard&mode=fleet"
+    researchPage        = "https://" + domain + "/game.php?page=research"
+    officerPage         = "https://" + domain + "/game.php?page=officier"
+    battleSimulatorPage = "https://" + domain + "/game.php?page=battleSimulator&mode=send"
+    battleRapportPage   = "https://" + domain + "/game.php?page=raport&raport="
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
@@ -156,3 +160,24 @@ class IA:
         data = {}
         data["content"] = "<@" + self.config.idToPing + "> " + message
         self.session.post(self.config.webhookUrl, data)
+
+    def simulateCombat(self, fleet1, fleet2, bonus1=[0, 0, 0], bonus2=[0, 0, 0], ressources=[0, 0, 0]):
+        payload = {}
+        payload["battleinput[0][1][901]"] = ressources[0]
+        payload["battleinput[0][1][902]"] = ressources[1]
+        payload["battleinput[0][1][903]"] = ressources[2]
+        payload["battleinput[0][0][109]"] = bonus1[0]
+        payload["battleinput[0][0][110]"] = bonus1[1]
+        payload["battleinput[0][0][111]"] = bonus1[2]
+        payload["battleinput[0][1][109]"] = bonus2[0]
+        payload["battleinput[0][1][110]"] = bonus2[1]
+        payload["battleinput[0][1][111]"] = bonus2[2]
+        for shipId in fleet1.keys():
+            payload["battleinput[0][0][" + shipId + "]"] = fleet1[shipId]
+        for shipId in fleet2.keys():
+            payload["battleinput[0][1][" + shipId + "]"] = fleet2[shipId]
+        simulatorReq = Request(self.battleSimulatorPage, payload)
+        self.execRequest(simulatorReq)
+        rapportReq = Request(self.battleRapportPage + simulatorReq.content.replace('"', ''), payload)
+        self.execRequest(rapportReq)
+        return CombatReport.analyzeCombatReport(rapportReq.content)

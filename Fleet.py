@@ -10,9 +10,10 @@ class Fleet:
     colonizeCode   = 7
     expeditionCode = 15
 
-    def __init__(self, player, id, origin, target, eta, type, isGoing):
+    def __init__(self, player, id, ships, origin, target, eta, type, isGoing):
         self.player = player
         self.id = id
+        self.ships = ships
         self.origin = origin
         self.target = target
         self.eta = eta
