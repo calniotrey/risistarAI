@@ -237,17 +237,17 @@ class Planet:
             return [min(em, self.metalStorage), min(ec, self.crystalStorage), min(ed, self.deutStorage)]
         return [em, ec, ed]
 
-    def getShips(self):
-        getShipsRequest = Request(self.player.ia.getShipsPage + "&cp=" + self.id, {})
-        self.player.ia.execRequest(getShipsRequest)
-        soup = BeautifulSoup(getShipsRequest.content, "html.parser")
+    def scanShips(self):
+        scanShipsRequest = Request(self.player.ia.scanShipsPage + "&cp=" + self.id, {})
+        self.player.ia.execRequest(scanShipsRequest)
+        soup = BeautifulSoup(scanShipsRequest.content, "html.parser")
         #parse all available ships
         shipsTr = soup.find("table", class_="table519").find_all("tr")[2:-2] #the first and last 2 are headers
         ships = {}
         for shipTr in shipsTr:
             shipTd = shipTr.find_all("td")[1]
-            shipId = shipTd.attrs["id"].split("_")[0]
-            shipAmount = int(shipTd.text)
+            shipId = shipTd.attrs["id"].split("_")[0].replace("ship", "")
+            shipAmount = int(shipTd.text.replace(".", ""))
             ships[shipId] = shipAmount
         self.ships = ships
 

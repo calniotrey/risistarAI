@@ -89,6 +89,15 @@ class Player:
             isGoing = (typeList[0] == "flight")
             type = typeList[1]
             aList = fleetSpan.findAll("a", class_=type)
+            ships = {}
+            shipsA = fleetSpan.find("a", class_="tooltip")
+            if shipsA is not None:
+                shipsSoup = BeautifulSoup(shipsA.attrs["data-tooltip-content"], "html.parser")
+                for tr in shipsSoup.findAll("tr"):
+                    tds = tr.findAll("td")
+                    shipType = Codes.strToId[tds[0].text[:-1]]
+                    shipAmount = int(tds[1].text.replace(".", ""))
+                    ships[shipType] = shipAmount
             aList = [a for a in aList if not "tooltip" in a.attrs["class"]]
             originA = aList[0]
             targetA = aList[1]
@@ -106,7 +115,7 @@ class Player:
                 target.append(2)
             else:
                 target.append(1)
-            fleet = Fleet(self, id, origin, target, eta, type, isGoing)
+            fleet = Fleet(self, id, ships, origin, target, eta, type, isGoing)
             ancientFleet = self.fleets.get(fleet.id)
             if ancientFleet is not None:
                 fleet.firstSpotted = ancientFleet.firstSpotted

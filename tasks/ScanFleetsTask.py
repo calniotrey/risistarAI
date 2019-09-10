@@ -36,24 +36,26 @@ class ScanFleetsTask(Task):
                 shouldEvade = shouldEvade and ia.config.activateAutoEvasion
                 shouldEvade = shouldEvade and (time.time() - fleet.firstSpotted) >= ia.config.minimumSpottingTime
                 if shouldEvade:
-                    targetPlanet.getShips()
-                    if targetPlanet.ships: #if there are some ships to send
-                        try:
-                            targetPlanet.sendFleet(ia.config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
-                        except:
-                            log(targetPlanet, "Error while sending the fleet for evasion")
-                    targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
-                    gt = min(targetPlanet.metal//6000, targetPlanet.crystal//6000)
-                    targetPlanet.buildShips({203:gt})
-                    targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
-                    pt = min(targetPlanet.metal//2000, targetPlanet.crystal//2000)
-                    targetPlanet.buildShips({202:pt})
-                    targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
-                    lle = min(targetPlanet.metal//1500, targetPlanet.crystal//500)
-                    targetPlanet.buildDefenses({402:lle})
-                    targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
-                    lm = targetPlanet.metal//2000
-                    targetPlanet.buildDefenses({401:lm})
+                    targetPlanet.scanShips()
+                    rapport = self.player.ia.simulateCombat(fleet.ships, targetPlanet.ships) #TODO add defense
+                    if rapport.combatResult != 1: #if we don't win
+                        if targetPlanet.ships: #if there are some ships to send
+                            try:
+                                targetPlanet.sendFleet(ia.config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
+                            except:
+                                log(targetPlanet, "Error while sending the fleet for evasion")
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        gt = min(targetPlanet.metal//6000, targetPlanet.crystal//6000)
+                        targetPlanet.buildShips({203:gt})
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        pt = min(targetPlanet.metal//2000, targetPlanet.crystal//2000)
+                        targetPlanet.buildShips({202:pt})
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        lle = min(targetPlanet.metal//1500, targetPlanet.crystal//500)
+                        targetPlanet.buildDefenses({402:lle})
+                        targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
+                        lm = targetPlanet.metal//2000
+                        targetPlanet.buildDefenses({401:lm})
         try:
             if not ennemyFleetInc:
                 for fleet in self.player.fleets.values():
