@@ -1,4 +1,4 @@
-class OfficerOrder:
+class OfficersPickingOrder:
     def __init__(self, officers=[], filePath=None):
         self.officers = officers
         if filePath is not None:
@@ -10,9 +10,9 @@ class OfficerOrder:
             officerId = self.officers[stepNumber] #the officerId to be built according to this step
             levelToGet = officersAtThisStep.get(officerId, 0) + 1  #the level it should be after getting it
             officersAtThisStep[officerId] = levelToGet
-            currentLevel = currentOfficers.get(officerId, 0)
-            if levelToBuild > currentLevel:
-                return officerId
+            currentOfficer = currentOfficers.get(officerId, None)
+            if currentOfficer is not None and levelToGet > currentOfficer.level:
+                return currentOfficer
         return None
 
     def loadFromFile(self, filePath):
@@ -25,6 +25,6 @@ class OfficerOrder:
                     if not ":" in l:
                         l += ":1"
                     id, times = l.split(":")
-                    for i in range(times):
+                    for i in range(int(times)):
                         self.officers.append(int(id))
                 l = file.readline()
