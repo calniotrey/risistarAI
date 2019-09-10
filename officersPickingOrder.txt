@@ -1,12 +1,20 @@
 #This is a comment
 #Comments and empty lines are allowed
 #Each line must contain id:level
+#where level the number of time you want to upgrade it
+#A line containing only 'id' will be treated as 'id:1'
 
-
+#Geologue
 601:20
+#Ingenieur
 603:2
+#Constructor
 605:3
+#Scientist
 606:3
+#Stockage expert
 607:2
+#the 8 remaining level of ingenieur
 603:8
+#Amiral
 602:20

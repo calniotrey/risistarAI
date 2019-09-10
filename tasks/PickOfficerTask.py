@@ -12,7 +12,8 @@ class PickOfficerTask(Task):
     def execute(self):
         self.player.scanOfficers()
         officer = self.player.chooseOfficerToPick()
-        if officer is not None:
+        if officer is not None and self.player.darkMatter >= 1000:
+            log(None, "Upgrading the officer " + officer.type)
             req = officer.upgrade()
             self.player.extractInfos(request=req, darkMatter=True, planets=False)
             if self.player.darkMatter >= 1000:
