@@ -1,5 +1,6 @@
 import sys
 import time
+from math import sqrt
 from bs4 import BeautifulSoup
 from Codes import Codes
 from Fleet import Fleet
@@ -209,3 +210,20 @@ class Player:
         self.ia.execRequest(checkAchievementRequest)
         soup = BeautifulSoup(checkAchievementRequest.content, "html.parser")
         return soup.find(class_="kategorie") is None
+
+    def getMaximumNumberOfExpeditions(self):
+        astro = self.researchs.get(124, None)
+        if astro is None:
+            return 0
+        return int(sqrt(astro.level))
+
+    def getActualNumberOfExpeditions(self):
+        number = 0
+        for fleet in self.fleets.values():
+            if fleet.isExpedition():
+                number += 1
+        return number
+
+    def scanOwnShips(self): # TODO replace this by scraping the empire page
+        for planet in self.planets:
+            planet.scanShips()

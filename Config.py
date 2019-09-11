@@ -9,6 +9,7 @@ class Config:
         self.activateAutoFleetScan = None
         self.activateDefenderDiscordPing = None
         self.activateAutoEvasion = None
+        self.activateAutoExpedition = None
         self.activatePickingOfficers = None
         self.robotRatio = None
         self.robotStartingLevel = None
@@ -54,6 +55,8 @@ class Config:
                         self.activateDefenderDiscordPing = value == "True"
                     elif key == "activateAutoEvasion":
                         self.activateAutoEvasion = value == "True"
+                    elif key == "activateAutoExpedition":
+                        self.activateAutoExpedition = value == "True"
                     elif key == "activatePickingOfficers":
                         self.activatePickingOfficers = value == "True"
                     elif key == "robotRatio":
@@ -95,6 +98,8 @@ class Config:
             return "Custom build orders is activated but the build orders pairing file isn't specified !"
         if self.activateAutoEvasion and not self.activateAutoFleetScan:
             return "Auto evasion is activated but not auto fleet scan !"
+        if self.activateAutoExpedition and not self.activateAutoFleetScan:
+            return "Auto expedition is activated but not auto fleet scan !"
         if self.activateDefenderDiscordPing and not self.activateAutoFleetScan:
             return "Defender ping is activated but not auto fleet scan !"
         if self.activateDefenderDiscordPing and self.webhookUrl == "None":
