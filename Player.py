@@ -203,3 +203,9 @@ class Player:
 
     def chooseOfficerToPick(self): #doesn't check if enough DM
         return self.officersPickingOrder.nextOfficer(self.officers)
+
+    def checkNewAchievement(self): #returns True if a new achievement was achieved
+        checkAchievementRequest = Request(self.ia.achievementsPage, {})
+        self.ia.execRequest(checkAchievementRequest)
+        soup = BeautifulSoup(checkAchievementRequest.content, "html.parser")
+        return soup.find(class_="kategorie") is None
