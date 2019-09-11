@@ -150,12 +150,12 @@ class Player:
             if r.attrs.get("id") == "buildlist": #if it's a researchs being currently researched
                 self.researchingEnd = float(r.find(class_="timer").attrs["data-time"]) #at the end of the loop, it will be the end of the last research
             else:
-                nameAndLevelText = r.find("a").text
-                nameAndLevel = self.ia.buildingNameParser.findall(nameAndLevelText) #works for researchs too
-                name = nameAndLevel[0][0]
+                nameElement = r.find("a")
+                name = nameElement.text
                 level = 0
-                if nameAndLevel[0][1] != '':
-                    level = int(nameAndLevel[0][1])
+                if nameElement.nextSibling is not None:
+                    levelString = str(nameElement.nextSibling) # (Niveau 9) for example
+                    level = int(levelString.split("Niveau ")[1].split(")")[0])
                 divs = r.find_all("div", recursive=False)
                 upgradeTimeString = divs[1].span.text
                 upgradeTimeTab = upgradeTimeString.split("d ")
