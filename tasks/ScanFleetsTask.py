@@ -37,8 +37,10 @@ class ScanFleetsTask(Task):
                 shouldEvade = shouldEvade and (time.time() - fleet.firstSpotted) >= ia.config.minimumSpottingTime
                 if shouldEvade:
                     targetPlanet.scanShips()
+                    log(None, "Simulating combat")
                     rapport = self.player.ia.simulateCombat(fleet.ships, targetPlanet.ships) #TODO add defense
-                    if rapport.combatResult != 1: #if we don't win
+                    if rapport.combatResult != -1: #if we (the defender) don't win
+                        log(None, "The incoming battle isn't in our favor, initiating evasion")
                         if targetPlanet.ships: #if there are some ships to send
                             try:
                                 targetPlanet.sendFleet(ia.config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
@@ -56,6 +58,8 @@ class ScanFleetsTask(Task):
                         targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
                         lm = targetPlanet.metal//2000
                         targetPlanet.buildDefenses({401:lm})
+                    else:
+                        log(None, "The incoming battle is in our favor. Battlestations!")
         try:
             if not ennemyFleetInc:
                 for fleet in self.player.fleets.values():

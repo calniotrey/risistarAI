@@ -176,9 +176,9 @@ class IA:
         payload["battleinput[0][1][110]"] = bonus2[1]
         payload["battleinput[0][1][111]"] = bonus2[2]
         for shipId in fleet1.keys():
-            payload["battleinput[0][0][" + shipId + "]"] = fleet1[shipId]
+            payload["battleinput[0][0][" + str(shipId) + "]"] = fleet1[shipId]
         for shipId in fleet2.keys():
-            payload["battleinput[0][1][" + shipId + "]"] = fleet2[shipId]
+            payload["battleinput[0][1][" + str(shipId) + "]"] = fleet2[shipId]
         simulatorReq = Request(self.battleSimulatorPage, payload)
         self.execRequest(simulatorReq)
         rapportReq = Request(self.battleRapportPage + simulatorReq.content.replace('"', ''), payload)
