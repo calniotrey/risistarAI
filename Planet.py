@@ -254,7 +254,7 @@ class Planet:
     def sendFleet(self, target, missionType, ships, ressources, speed=10, staytime=1, allRessources=False):
         firstPayload = {}
         for ship in ships.keys():
-            firstPayload[str(ship)] = ships[ship]
+            firstPayload["ship" + str(ship)] = ships[ship]
         sendFleetStep1 = Request(self.player.ia.sendFleetStep1Page + "&cp=" + self.id, firstPayload)
         self.player.ia.execRequest(sendFleetStep1)
         soup = BeautifulSoup(sendFleetStep1.content, "html.parser")
