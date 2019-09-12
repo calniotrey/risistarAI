@@ -220,7 +220,7 @@ class Player:
     def getActualNumberOfExpeditions(self):
         number = 0
         for fleet in self.fleets.values():
-            if fleet.isExpedition():
+            if fleet.isExpedition(): #no need to check if coming back, only one id for both
                 number += 1
         return number
 

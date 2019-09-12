@@ -68,8 +68,10 @@ class ScanFleetsTask(Task):
                         fleet.sendBack()
         except:
             log(None, "Error while sending back fleet from evasion")
-        if ia.config.activateAutoExpedition and self.player.getActualNumberOfExpeditions() < self.player.getMaximumNumberOfExpeditions():
-            newExpeditionTask = SendExpeditionTask(time.time(), self.player)
-            ia.addTask(newExpeditionTask)
+        if ia.config.activateAutoExpedition:
+            numberOfExpeditionsToLaunch = self.player.getMaximumNumberOfExpeditions() - self.player.getActualNumberOfExpeditions()
+            for i in range(numberOfExpeditionsToLaunch):
+                newExpeditionTask = SendExpeditionTask(time.time(), self.player)
+                ia.addTask(newExpeditionTask)
         newTask = ScanFleetsTask(time.time() + ia.config.minimumTimeBetweenScans, self.player)
         ia.addTask(newTask)
