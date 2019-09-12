@@ -34,6 +34,9 @@ class Fleet:
     def isOwnSpy(self):
         return self.type == "ownespionage"
 
+    def isExpedition(self):
+        return self.target[2] == 16 or self.origin[2] == 16 #ongoing or coming back
+
     def sendBack(self): #no check if the fleet is ours
         sendBackRequest = Request(self.player.ia.sendBackFleetPage, {"fleetID": self.id})
         self.player.ia.execRequest(sendBackRequest)

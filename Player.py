@@ -1,5 +1,6 @@
 import sys
 import time
+from math import sqrt
 from bs4 import BeautifulSoup
 from Codes import Codes
 from Fleet import Fleet
@@ -150,12 +151,12 @@ class Player:
             if r.attrs.get("id") == "buildlist": #if it's a researchs being currently researched
                 self.researchingEnd = float(r.find(class_="timer").attrs["data-time"]) #at the end of the loop, it will be the end of the last research
             else:
-                nameAndLevelText = r.find("a").text
-                nameAndLevel = self.ia.buildingNameParser.findall(nameAndLevelText) #works for researchs too
-                name = nameAndLevel[0][0]
+                nameElement = r.find("a")
+                name = nameElement.text
                 level = 0
-                if nameAndLevel[0][1] != '':
-                    level = int(nameAndLevel[0][1])
+                if nameElement.nextSibling is not None:
+                    levelString = str(nameElement.nextSibling) # (Niveau 9) for example
+                    level = int(levelString.split("Niveau ")[1].split(")")[0])
                 divs = r.find_all("div", recursive=False)
                 upgradeTimeString = divs[1].span.text
                 upgradeTimeTab = upgradeTimeString.split("d ")
@@ -209,3 +210,20 @@ class Player:
         self.ia.execRequest(checkAchievementRequest)
         soup = BeautifulSoup(checkAchievementRequest.content, "html.parser")
         return soup.find(class_="kategorie") is None
+
+    def getMaximumNumberOfExpeditions(self):
+        astro = self.researchs.get(124, None)
+        if astro is None:
+            return 0
+        return int(sqrt(astro.level))
+
+    def getActualNumberOfExpeditions(self):
+        number = 0
+        for fleet in self.fleets.values():
+            if fleet.isExpedition(): #no need to check if coming back, only one id for both
+                number += 1
+        return number
+
+    def scanOwnShips(self): # TODO replace this by scraping the empire page
+        for planet in self.planets:
+            planet.scanShips()

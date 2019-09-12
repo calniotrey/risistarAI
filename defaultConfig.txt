@@ -10,6 +10,7 @@ activateCustomBuildOrders=False
 activateAutoFleetScan=True
 activateDefenderDiscordPing=False
 activateAutoEvasion=False
+activateAutoExpedition=False
 activatePickingOfficers=False
 
 ## AutoBuild Settings
