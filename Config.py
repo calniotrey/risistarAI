@@ -22,6 +22,7 @@ class Config:
         self.customAttackNotificationMessage = None
         self.escapeTarget = None
         self.minimumSpottingTime = None
+        self.launchExpeditionSeparately = None
         self.officersPickingOrderFile = None
         self.researchPlanetId = None
 
@@ -83,6 +84,8 @@ class Config:
                         self.minimumSpottingTime = int(value)
                     elif key == "officersPickingOrderFile":
                         self.officersPickingOrderFile = value
+                    elif key == "launchExpeditionSeparately":
+                        self.launchExpeditionSeparately = value == "True"
                     elif key == "researchPlanetId":
                         self.researchPlanetId = int(value)
                 l = file.readline()

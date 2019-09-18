@@ -42,6 +42,11 @@ customAttackNotificationMessage=Attack on {targetPlanet.name} ({targetPlanet.pos
 escapeTarget=1:50:5:1
 minimumSpottingTime=300
 
+##AutoExpedition settings
+#This indicates if only one expedition is launched at a time (one per fleet scan)
+#If false, it will launch all missing expedition directly (which is impossible for a human being)
+launchExpeditionSeparately=True
+
 ##Getting Officers settings
 officersPickingOrderFile=officersPickingOrder.txt
 
