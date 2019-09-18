@@ -72,6 +72,13 @@ Then, if no enemy fleet is incoming, it will turn the evading fleet back.
 In the future, we want to only evade dangerous fleets (currently a single cruiser would make you evade despite your defenses).
 Additionally, we want to allow more evading destinations, and possibly taunting messages to be sent (to simulate human activity).
 
+### AutoExpedition
+If this feature and AutoFleetScan is enabled, then the AI will automatically launch expedition fleets whenever possible.
+These fleets consist of either a Deadalus, a small cargo or a big cargo.
+If none of these 3 types of ships are present on any planet, it builds a small cargo on a planet which can afford it (ie enough resources and the building).
+The configuration option `launchExpeditionSeparately` allows to limit the launchs to one per fleet scan.
+If turned to False, you will launch all your expeditions one after the other (with next to 0 second interval), which no human can do.
+
 ## Updating :
 Just pull the master branch. Then, you may need to change your settings from 'config.txt' to enable new features.
 You can see what new settings are available by looking at the 'defaultConfig.txt'.
