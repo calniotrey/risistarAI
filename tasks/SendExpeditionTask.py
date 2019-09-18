@@ -14,14 +14,14 @@ class SendExpeditionTask(Task):
         stop = False
         for planet in self.player.planets:
             if not stop and planet.deut >= 10:
-                if planet.ships.get(232, 0) >= 1:
+                if planet.ships.get(232, 0) >= 1: #Deadalus
                     planet.sendFleet(planet.pos[0:2] + [16, 1], Fleet.expeditionCode, {232:1}, [0, 0, 0])
                     stop = True
-                elif planet.ships.get(203, 0) >= 1:
-                    planet.sendFleet(planet.pos[0:2] + [16, 1], Fleet.expeditionCode, {203:1}, [0, 0, 0])
-                    stop = True
-                elif planet.ships.get(202, 0) >= 1:
+                elif planet.ships.get(202, 0) >= 1: #Small cargo
                     planet.sendFleet(planet.pos[0:2] + [16, 1], Fleet.expeditionCode, {202:1}, [0, 0, 0])
+                    stop = True
+                elif planet.ships.get(203, 0) >= 1: #Big Cargo
+                    planet.sendFleet(planet.pos[0:2] + [16, 1], Fleet.expeditionCode, {203:1}, [0, 0, 0])
                     stop = True
                 if stop:
                     log(planet, "Launched an expedition!")
@@ -30,7 +30,7 @@ class SendExpeditionTask(Task):
             combustionResearch = self.player.researchs.get(115, None)
             if combustionResearch is not None and combustionResearch.level >= 2:
                 for planet in self.player.planets:
-                    if not stop and planet.metal >= 2000 and metal.crystal >= 2000 and planet.deut >= 10:
+                    if not stop and planet.metal >= 2000 and planet.crystal >= 2000 and planet.deut >= 10:
                         spacePort = planet.buildingById(21)
                         if spacePort is not None and spacePort.level >= 2:
                             planet.buildShips({202:1})
