@@ -1,4 +1,5 @@
 import time
+from UtilitiesFunctions import log
 
 class Request:
     def __init__(self, url, payload):
@@ -9,7 +10,14 @@ class Request:
         self.content = None
 
     def connect(self, session):
-        self.response = session.post(self.url, data=self.payload)
+        connected = False
+        while not connected:
+            try:
+                self.response = session.post(self.url, data=self.payload)
+                connected = True
+            except:
+                log(None, "Error while sending request, sleeping for 10 seconds")
+                time.sleep(10)
         self.date = time.time()
         self.content = self.response.content.decode().replace("\n", "").replace("\t", "")
         return self.response
