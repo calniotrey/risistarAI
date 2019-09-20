@@ -18,6 +18,7 @@ class ScanFleetsTask(Task):
         self.player.getFleets()
         log(None, "Scanned fleets")
         ennemyFleetInc = False
+        discordMessageToSend = ""
         for fleet in self.player.fleets.values():
             targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
             if fleet.isCombat() and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
@@ -29,7 +30,7 @@ class ScanFleetsTask(Task):
                         message = message.replace("{targetPlanet.name}", targetPlanet.name)
                         message = message.replace("{targetPlanet.position}", targetPlanet.getPosAsString())
                         message = message.replace("{fleet.ttd}", str(int(fleet.eta - time.time())))
-                        ia.pingUser(message)
+                        discordMessageToSend += "\n" + message
                     except:
                         log(targetPlanet, "Error while pinging Discord user. Make sure the webhook is correct.")
                 minimumTimeWindowToLaunch = 2 * ia.config.minimumTimeBetweenScans + ia.config.randomAdditionnalTimeBetweenScans
@@ -62,6 +63,11 @@ class ScanFleetsTask(Task):
                         targetPlanet.buildDefenses({401:lm})
                     else:
                         log(None, "The incoming battle is in our favor. Battlestations!")
+        if ia.config.activateDefenderDiscordPing and ennemyFleetInc:
+            try:
+                ia.pingUser(discordMessageToSend)
+            except:
+                log(None, "Error while pinging Discord user. Make sure the webhook is correct.")
         try:
             if not ennemyFleetInc:
                 for fleet in self.player.fleets.values():
