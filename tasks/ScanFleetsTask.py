@@ -20,7 +20,7 @@ class ScanFleetsTask(Task):
         ennemyFleetInc = False
         for fleet in self.player.fleets.values():
             targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
-            if fleet.type == "attack" and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
+            if fleet.isCombat() and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
                 log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(int(fleet.eta - time.time())))
                 ennemyFleetInc = True
                 if ia.config.activateDefenderDiscordPing:
@@ -40,7 +40,8 @@ class ScanFleetsTask(Task):
                     targetPlanet.scanShips()
                     log(None, "Simulating combat")
                     rapport = self.player.ia.simulateCombat(fleet.ships, targetPlanet.ships) #TODO add defense
-                    if rapport.combatResult != -1: #if we (the defender) don't win
+                    if rapport.combatResult == 1 or (rapport.combatResult == 0 and not fleet.isDestroy()):
+                        #if we (the defender) loose, or if it's a tie and it's not a moon destruction mission
                         log(None, "The incoming battle isn't in our favor, initiating evasion")
                         if targetPlanet.ships: #if there are some ships to send
                             try:

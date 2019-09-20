@@ -22,8 +22,14 @@ class Fleet:
         self.isHostile = False
         self.firstSpotted = time.time()
 
+    def isCombat(self):
+        return self.isAttack() or self.isDestroy()
+
     def isAttack(self):
         return self.type == "attack"
+
+    def isDestroy(self):
+        return self.type == "destroy"
 
     def isSpy(self):
         return self.type == "espionage" or self.type == "ownespionage"
