@@ -18,9 +18,10 @@ class ScanFleetsTask(Task):
         self.player.getFleets()
         log(None, "Scanned fleets")
         ennemyFleetInc = False
+        discordMessageToSend = ""
         for fleet in self.player.fleets.values():
             targetPlanet = self.player.getOwnPlanetByPosition(fleet.target)
-            if fleet.type == "attack" and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
+            if fleet.isCombat() and targetPlanet is not None and fleet.isGoing: #if we are getting attacked
                 log(None, "HOSTILE FLEET targeting " + targetPlanet.name + " in " + str(int(fleet.eta - time.time())))
                 ennemyFleetInc = True
                 if ia.config.activateDefenderDiscordPing:
@@ -29,7 +30,7 @@ class ScanFleetsTask(Task):
                         message = message.replace("{targetPlanet.name}", targetPlanet.name)
                         message = message.replace("{targetPlanet.position}", targetPlanet.getPosAsString())
                         message = message.replace("{fleet.ttd}", str(int(fleet.eta - time.time())))
-                        ia.pingUser(message)
+                        discordMessageToSend += "\n" + message
                     except:
                         log(targetPlanet, "Error while pinging Discord user. Make sure the webhook is correct.")
                 minimumTimeWindowToLaunch = 2 * ia.config.minimumTimeBetweenScans + ia.config.randomAdditionnalTimeBetweenScans
@@ -40,7 +41,8 @@ class ScanFleetsTask(Task):
                     targetPlanet.scanShips()
                     log(None, "Simulating combat")
                     rapport = self.player.ia.simulateCombat(fleet.ships, targetPlanet.ships) #TODO add defense
-                    if rapport.combatResult != -1: #if we (the defender) don't win
+                    if rapport.combatResult == 1 or (rapport.combatResult == 0 and not fleet.isDestroy()):
+                        #if we (the defender) loose, or if it's a tie and it's not a moon destruction mission
                         log(None, "The incoming battle isn't in our favor, initiating evasion")
                         if targetPlanet.ships: #if there are some ships to send
                             try:
@@ -61,6 +63,11 @@ class ScanFleetsTask(Task):
                         targetPlanet.buildDefenses({401:lm})
                     else:
                         log(None, "The incoming battle is in our favor. Battlestations!")
+        if ia.config.activateDefenderDiscordPing and ennemyFleetInc:
+            try:
+                ia.pingUser(discordMessageToSend)
+            except:
+                log(None, "Error while pinging Discord user. Make sure the webhook is correct.")
         try:
             if not ennemyFleetInc:
                 for fleet in self.player.fleets.values():
