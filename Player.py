@@ -85,20 +85,22 @@ class Player:
             etaStr = fleetTd.attrs["data-fleet-end-time"]
             eta = float(etaStr)
             id = fleetTd.attrs["id"].split(etaStr)[1] #The etaStr is appended at the end of the id
-            fleetSpan = fleetTd.parent.find("span")
-            typeList = fleetSpan.attrs["class"]
+            secondTd = fleetTd.parent.findAll("td")[1]
+            fleetsSpans = secondTd.findAll("span", recursive=False) #can be more than 1 if grouped attack
+            typeList = fleetsSpans[-1].attrs["class"] #the last one has the type
             isGoing = (typeList[0] == "flight")
             type = typeList[1]
-            aList = fleetSpan.findAll("a", class_=type)
+            aList = fleetsSpans[-1].findAll("a", class_=type)
             ships = {}
-            shipsA = fleetSpan.find("a", class_="tooltip")
-            if shipsA is not None:
-                shipsSoup = BeautifulSoup(shipsA.attrs["data-tooltip-content"], "html.parser")
-                for tr in shipsSoup.findAll("tr"):
-                    tds = tr.findAll("td")
-                    shipType = Codes.strToId[tds[0].text[:-1]]
-                    shipAmount = int(tds[1].text.replace(".", ""))
-                    ships[shipType] = shipAmount
+            for fleetSpan in fleetsSpans:
+                shipsA = fleetSpan.find("a", class_="tooltip")
+                if shipsA is not None:
+                    shipsSoup = BeautifulSoup(shipsA.attrs["data-tooltip-content"], "html.parser")
+                    for tr in shipsSoup.findAll("tr"):
+                        tds = tr.findAll("td")
+                        shipType = Codes.strToId[tds[0].text[:-1]]
+                        shipAmount = int(tds[1].text.replace(".", ""))
+                        ships[shipType] = ships.get(shipType, 0) + shipAmount
             aList = [a for a in aList if not "tooltip" in a.attrs["class"]]
             originA = aList[0]
             targetA = aList[1]
