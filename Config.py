@@ -10,6 +10,7 @@ class Config:
         self.activateDefenderDiscordPing = None
         self.activateAutoEvasion = None
         self.activateAutoExpedition = None
+        self.activateAutoColonization = None
         self.activatePickingOfficers = None
         self.robotRatio = None
         self.robotStartingLevel = None
@@ -58,6 +59,8 @@ class Config:
                         self.activateAutoEvasion = value == "True"
                     elif key == "activateAutoExpedition":
                         self.activateAutoExpedition = value == "True"
+                    elif key == "activateAutoColonization":
+                        self.activateAutoColonization = value == "True"
                     elif key == "activatePickingOfficers":
                         self.activatePickingOfficers = value == "True"
                     elif key == "robotRatio":
