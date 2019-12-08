@@ -45,6 +45,7 @@ class IA:
     battleSimulatorPage = "https://" + domain + "/game.php?page=battleSimulator&mode=send"
     battleRapportPage   = "https://" + domain + "/game.php?page=raport&raport="
     achievementsPage    = "https://" + domain + "/game.php?page=achievements"
+    galaxyPage          = "https://" + domain + "/game.php?page=galaxy"
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')

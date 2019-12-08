@@ -311,5 +311,28 @@ class Planet:
         buildShipReq = Request(self.player.ia.buildShipPage + "&cp=" + self.id, payload)
         self.player.ia.execRequest(buildShipReq)
 
+    def scanSystem(self, galaxy, system): #TODO add check for not enough deut
+        payload = {}
+        payload["galaxy"] = galaxy
+        payload["system"] = system
+        scanSystemRequest = Request(self.player.ia.galaxyPage + "&cp=" + self.id, payload)
+        self.player.ia.execRequest(scanSystemRequest)
+        soup = BeautifulSoup(scanSystemRequest.content, "html.parser")
+        #parse all available locations
+        divContent = soup.find("div", id="content")
+        systemTable = divContent.find("table", recursive=False)
+        locationList = systemTable.find_all("tr")[2:-5] #the first 2 and last 5 are headers
+        planets = []
+        locationNumber = 0
+        for location in locationList:
+            locationNumber += 1
+            tdList = location.find_all("td")
+            if tdList[0].a is None: # if there is a planet in this location
+                nameWithActivity = tdList[2].text #TODO remove activity from the name
+                planet = Planet(None, nameWithActivity, [galaxy, system, locationNumber, 1], None)
+                planets.append(planet)
+                #TODO add moon
+        return planets
+
     def getPosAsString(self):
         return str(self.pos[0]) + ":" + str(self.pos[1]) + ":" + str(self.pos[2]) + ":" + str(self.pos[3])
