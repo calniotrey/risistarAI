@@ -213,6 +213,36 @@ class Player:
         soup = BeautifulSoup(checkAchievementRequest.content, "html.parser")
         return soup.find(class_="kategorie") is None
 
+    def getMaximumNumberOfPlanets(self):
+        astro = self.researchs.get(124, None)
+        if astro is None:
+            return 1
+        return (astro.level + 3) // 2
+
+    def getActualNumberOfPlanets(self):
+        number = 0
+        for planet in self.planets:
+            if not planet.isMoon:
+                number += 1
+        return number
+
+    def getColonizableLocations(self):
+        # Returns the colonizable locations in the 'best' order
+        astro = self.researchs.get(124, None)
+        if astro is None:
+            return []
+        else:
+            if astro.level >= 8:
+                return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
+            elif astro.level >= 4:
+                return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14]
+            elif astro.level >= 2:
+                return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13]
+            elif astro.level >= 1:
+                return [8, 7, 9, 6, 10, 5, 11, 4, 12]
+            else:
+                return []
+
     def getMaximumNumberOfExpeditions(self):
         astro = self.researchs.get(124, None)
         if astro is None:

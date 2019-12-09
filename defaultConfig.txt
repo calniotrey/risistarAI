@@ -11,6 +11,7 @@ activateAutoFleetScan=True
 activateDefenderDiscordPing=False
 activateAutoEvasion=False
 activateAutoExpedition=False
+activateAutoColonization=False
 activatePickingOfficers=False
 
 ## AutoBuild Settings

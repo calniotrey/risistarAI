@@ -12,6 +12,7 @@ from Player import Player
 from Request import Request
 from tasks.Task import Task
 from tasks.CheckAchievementsTask import CheckAchievementsTask
+from tasks.ColonizeTask import ColonizeTask
 from tasks.PickOfficerTask import PickOfficerTask
 from tasks.PlanningTask import PlanningTask
 from tasks.ScanFleetsTask import ScanFleetsTask
@@ -45,6 +46,7 @@ class IA:
     battleSimulatorPage = "https://" + domain + "/game.php?page=battleSimulator&mode=send"
     battleRapportPage   = "https://" + domain + "/game.php?page=raport&raport="
     achievementsPage    = "https://" + domain + "/game.php?page=achievements"
+    galaxyPage          = "https://" + domain + "/game.php?page=galaxy"
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
@@ -81,6 +83,8 @@ class IA:
             self.addTask(ScanFleetsTask(time.time(), self.player, 0))
         if self.config.activatePickingOfficers:
             self.addTask(PickOfficerTask(time.time(), self.player))
+        if self.config.activateAutoColonization:
+            self.addTask(ColonizeTask(time.time(), self.player))
 
     def loadCustomBuildOrders(self):
         buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.config.customBuildOrdersDirectoryName)

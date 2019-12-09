@@ -3,6 +3,7 @@ import time
 from bs4 import BeautifulSoup
 from Building import Building
 from Codes import Codes
+from Fleet import Fleet
 from Request import Request
 from tasks.BuildingTask import BuildingTask
 from UtilitiesFunctions import log
@@ -33,6 +34,7 @@ class Planet:
         self.sizeMax = None
         self.ships = {}
         self.customBuildOrder = None
+        self.lastKnownSystem = []
 
     def buildingById(self, id):
         for b in self.batiments:
@@ -282,12 +284,30 @@ class Planet:
             fleetroom = int(scriptRessources.split(':"')[1].split('"')[0])
             consumption = int(scriptRessources.split(':"')[2].split('"')[0])
             fleetroom -= consumption
-            thirdPayload["deuterium"] = min(ressources[2], fleetroom)
-            fleetroom -= thirdPayload["deuterium"]
-            thirdPayload["crystal"] = min(ressources[1], fleetroom)
-            fleetroom -= thirdPayload["crystal"]
-            thirdPayload["metal"] = min(ressources[0], fleetroom)
-            fleetroom -= thirdPayload["metal"]
+            if missionType == Fleet.colonizeCode:
+                thirdPayload["metal"] = min(ressources[0], fleetroom/2)
+                fleetroom -= thirdPayload["metal"]
+                thirdPayload["crystal"] = min(ressources[1], fleetroom*2/3)
+                fleetroom -= thirdPayload["crystal"]
+                thirdPayload["deuterium"] = min(ressources[2], fleetroom)
+                fleetroom -= thirdPayload["deuterium"]
+                if fleetroom >= 0:
+                    fleetroom += thirdPayload["metal"]
+                    thirdPayload["metal"] = min(ressources[0], fleetroom)
+                    fleetroom -= thirdPayload["metal"]
+                    fleetroom += thirdPayload["crystal"]
+                    thirdPayload["crystal"] = min(ressources[1], fleetroom)
+                    fleetroom -= thirdPayload["crystal"]
+                    fleetroom += thirdPayload["deuterium"]
+                    thirdPayload["deuterium"] = min(ressources[2], fleetroom)
+                    fleetroom -= thirdPayload["deuterium"]
+            else:
+                thirdPayload["deuterium"] = min(ressources[2], fleetroom)
+                fleetroom -= thirdPayload["deuterium"]
+                thirdPayload["crystal"] = min(ressources[1], fleetroom)
+                fleetroom -= thirdPayload["crystal"]
+                thirdPayload["metal"] = min(ressources[0], fleetroom)
+                fleetroom -= thirdPayload["metal"]
             thirdPayload["mission"  ] = missionType
             thirdPayload["staytime" ] = staytime
             thirdPayload["token"    ]  = token
@@ -310,6 +330,48 @@ class Planet:
             payload["fmenge[" + str(id) + "]"] = ships[id]
         buildShipReq = Request(self.player.ia.buildShipPage + "&cp=" + self.id, payload)
         self.player.ia.execRequest(buildShipReq)
+
+    def scanSystem(self, galaxy, system): #TODO add check for not enough deut
+        payload = {}
+        payload["galaxy"] = galaxy
+        payload["system"] = system
+        scanSystemRequest = Request(self.player.ia.galaxyPage + "&cp=" + self.id, payload)
+        self.player.ia.execRequest(scanSystemRequest)
+        soup = BeautifulSoup(scanSystemRequest.content, "html.parser")
+        #parse all available locations
+        divContent = soup.find("div", id="content")
+        systemTable = divContent.find("table", recursive=False)
+        locationList = systemTable.find_all("tr")[2:-5] #the first 2 and last 5 are headers
+        planets = []
+        locationNumber = 0
+        for location in locationList:
+            locationNumber += 1
+            tdList = location.find_all("td")
+            if tdList[0].a is None: # if there is a planet in this location
+                nameWithActivity = tdList[2].text #TODO remove activity from the name
+                planet = Planet(None, nameWithActivity, [galaxy, system, locationNumber, 1], None)
+                planets.append(planet)
+                #TODO add moon
+        for planet in self.player.planets:
+            if planet.pos[0] == galaxy and planet.pos[1] == system:
+                planet.lastKnownSystem = planets
+        return planets
+
+    def scanOwnSystem(self):
+        return self.scanSystem(self.pos[0], self.pos[1])
+
+    def getColonizationTarget(self, useLastKnownSystem=False):
+        planetsList = self.lastKnownSystem
+        if not useLastKnownSystem:
+            planetsList = self.scanOwnSystem()
+        planetsDict = {}
+        for planet in planetsList:
+            if not planet.isMoon:
+                planetsDict[planet.pos[2]] = planet
+        for location in self.player.getColonizableLocations():
+            if planetsDict.get(location, None) is None: # No planet in this location
+                return location
+        return None
 
     def getPosAsString(self):
         return str(self.pos[0]) + ":" + str(self.pos[1]) + ":" + str(self.pos[2]) + ":" + str(self.pos[3])
