@@ -52,3 +52,16 @@ launchExpeditionSeparately=True
 officersPickingOrderFile=officersPickingOrder.txt
 
 researchPlanetId=0
+
+## Watchdog
+# The default delay in seconds between each reinitialization of the AI
+watchdogDelay=1800
+# If an exception is raised, the watchdog will wake sooner
+# This indicates the amount in seconds to subtract from the remaining time until the watchdog wake up
+watchdogExceptionDelay=60
+# After executing a task in the watchdogEarlyDelay seconds before the watchdog wakes up,
+# If there is no mid to high priority task scheduled in the next watchdogWakeDuration seconds,
+# Then wake the watchdog early
+watchdogEarlyDelay=60
+# watchdogWakeDuration should be a bit more than the time to initialize the AI
+watchdogWakeDuration=5
