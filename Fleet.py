@@ -28,6 +28,9 @@ class Fleet:
     def isAttack(self):
         return self.type == "attack"
 
+    def isColony(self):
+        return self.type == "colony" or self.type == "owncolony"
+
     def isDestroy(self):
         return self.type == "destroy"
 

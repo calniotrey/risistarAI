@@ -11,7 +11,11 @@ class ColonizeTask(Task):
 
     def execute(self):
         log(None, "Checking if colonization is possible")
-        if self.player.getMaximumNumberOfPlanets() > self.player.getActualNumberOfPlanets():
+        isAlreadyColonizing = False
+        for fleet in self.player.fleets.values():
+            if not isAlreadyColonizing and fleet.isColony():
+                isAlreadyColonizing = True
+        if not isAlreadyColonizing and self.player.getMaximumNumberOfPlanets() > self.player.getActualNumberOfPlanets():
             # This assures that tech is enough
             # We just need to get a planet with a colonization ship or a shipyard 4
             self.player.scanOwnShips()
@@ -27,6 +31,7 @@ class ColonizeTask(Task):
                     if location is not None:
                         stop = True
                         destination = [planet.pos[0], planet.pos[1], location, 1]
+                        log(None, "Colonizing " + str(destination))
                         planet.sendFleet(destination, Fleet.colonizeCode, {208:1}, [0, 0, 0], allRessources=True)
             if not stop: #ie no ship to send to colonize
                 log(None, "No colonization launched, trying to build a colony ship")
