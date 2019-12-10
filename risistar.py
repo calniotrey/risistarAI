@@ -1,6 +1,7 @@
 import requests
 import os
 import heapq
+import math
 import re
 import sys
 import threading
@@ -57,12 +58,25 @@ class IA:
     energyParser = re.compile(r'(-?\d+)./.(\d+)')
 
     def __init__(self, pseudo=None, password=None, lastCookie=None):
+        self.watchdog = None
+        self.pseudo = pseudo
+        self.password = password
+        self.lastCookie = lastCookie
+        self.session = requests.session()
+        self.player = None
+        self.tasks = {}
+        self.customBuildOrderDict = {}
+        self._stop = False
+        self.initialize()
+
+    def initialize(self):
+        self.watchdog = time.time() + self.config.watchdogDelay
         self.session = requests.session()
         if self.config.userAgent is not None:
             self.session.headers.update({'User-Agent': self.config.userAgent})
-        if lastCookie is not None:
-            self.changeCookie(lastCookie)
-        self.player = Player(pseudo, password, "Risistar", self)
+        if self.lastCookie is not None:
+            self.changeCookie(self.lastCookie)
+        self.player = Player(self.pseudo, self.password, "Risistar", self)
         self.player.connexion()
         self.player.extractInfos(planets=True, darkMatter=True)
         self.player.scanResearchs()
@@ -116,21 +130,49 @@ class IA:
     def addTask(self, t):
         heapq.heappush(self.tasks[t.prio], t)
 
-    def run(self):
-        stop = False
-        while not stop:
-            stop = True
+    def checkWatchdog(self): # Returns True if the watchdog wakes
+        timeUntilWatchdog = self.watchdog - time.time()
+        if timeUntilWatchdog <= 0:
+            self.wakeWatchdog()
+            return True
+        elif timeUntilWatchdog <= self.config.watchdogEarlyDelay:
+            timeToHighPrioTask = self.timeToNextSpecificPriotityTask(Task.highPrio)
+            timeToMiddlePrioTask = self.timeToNextSpecificPriotityTask(Task.middlePrio)
+            timeToTask = min(timeToHighPrioTask, timeToMiddlePrioTask)
+            if timeToTask > self.config.watchdogWakeDuration:
+                self.wakeWatchdog()
+                return True
+        return False
+
+    def wakeWatchdog(self):
+        timeToWake = self.watchdog - time.time()
+        if timeToWake > 0: # early wake up
+            log(None, "Waking the watchdog " + str(timeToWake) + " seconds early")
+        else:
+            log(None, "Waking the watchdog")
+        self.initialize()
+
+    def run(self): # Executes one task
+        if not self.checkWatchdog():
+            # Execute the first task
+            taskExecuted = False
             for prio in Task.descendingPrio:
-                if len(self.tasks[prio]) and self.tasks[prio][0].t < time.time():
+                if not taskExecuted and len(self.tasks[prio]) and self.tasks[prio][0].t < time.time():
                     taskToExecute = heapq.heappop(self.tasks[prio])
-                    taskToExecute.execute()
-                    stop = False
+                    try:
+                        taskToExecute.execute()
+                    except:
+                        log(None, "An exception occured while executing a " + taskToExecute.__class__.__name__)
+                        self.watchdog -= self.config.watchdogExceptionDelay
+                    taskExecuted = True
+            # See if the watchdog wakes
+            self.checkWatchdog()
 
     def permaRun(self, longestWait=10):
         while not self._stop:
             self.run()
             timeToSleep = self.timeToNextTask()
-            if timeToSleep is not None and timeToSleep > 0:
+            if timeToSleep > 0:
                 time.sleep(min(timeToSleep, longestWait))
         log(None, "Stopped")
 
@@ -141,8 +183,13 @@ class IA:
                 nextTaskTime = self.tasks[prio][0].t
         if nextTaskTime == None:
             log(None, "No more tasks ! ALERT")
-            return None
+            return math.inf
         return nextTaskTime - time.time()
+
+    def timeToNextSpecificPriotityTask(self, priority):
+        if len(self.tasks[priority]):
+            return self.tasks[priority][0].t - time.time()
+        return math.inf
 
     def permaRunDetached(self):
         threading.Thread(target=self.permaRun).start()

@@ -26,6 +26,10 @@ class Config:
         self.launchExpeditionSeparately = None
         self.officersPickingOrderFile = None
         self.researchPlanetId = None
+        self.watchdogDelay = None
+        self.watchdogExceptionDelay = None
+        self.watchdogEarlyDelay = None
+        self.watchdogWakeDuration = None
 
     def load():
         config = Config()
@@ -91,6 +95,14 @@ class Config:
                         self.launchExpeditionSeparately = value == "True"
                     elif key == "researchPlanetId":
                         self.researchPlanetId = int(value)
+                    elif key == "watchdogDelay":
+                        self.watchdogDelay = int(value)
+                    elif key == "watchdogExceptionDelay":
+                        self.watchdogExceptionDelay = int(value)
+                    elif key == "watchdogEarlyDelay":
+                        self.watchdogEarlyDelay = int(value)
+                    elif key == "watchdogWakeDuration":
+                        self.watchdogWakeDuration = int(value)
                 l = file.readline()
 
     def getError(self):
@@ -114,4 +126,14 @@ class Config:
             return "Defender ping is activated but the user id to ping isn't configurated !"
         if self.activatePickingOfficers and self.officersPickingOrderFile is None:
             return "Officer picking is activated but the order isn't configurated !"
+        if self.watchdogDelay is None:
+            return "watchdogDelay isn't defined"
+        if self.watchdogDelay <= 0:
+            return "watchdogDelay should be strictly positive (for example 1800 ie 30 minutes)"
+        if self.watchdogExceptionDelay is None:
+            return "watchdogExceptionDelay isn't defined (in doubt, put it at 0)"
+        if self.watchdogEarlyDelay is None:
+            return "watchdogEarlyDelay isn't defined (in doubt, put it at 0)"
+        if self.watchdogWakeDuration is None:
+            return "watchdogWakeDuration isn't defined (in doubt, put it at 5)"
         return None
