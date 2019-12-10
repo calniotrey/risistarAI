@@ -75,6 +75,10 @@ class Player:
                     pl.scan()
 
     def getFleets(self):
+        researchEspionage = self.researchs.get(106, None)
+        researchEspionageLevel = 0
+        if researchEspionage is not None:
+            researchEspionageLevel = researchEspionage.level
         fleets = {}
         overviewRequest = Request(self.ia.overviewPage, {})
         self.ia.execRequest(overviewRequest)
@@ -94,7 +98,7 @@ class Player:
             ships = {}
             for fleetSpan in fleetsSpans:
                 shipsA = fleetSpan.find("a", class_="tooltip")
-                if shipsA is not None:
+                if shipsA is not None and researchEspionageLevel >= 8:
                     shipsSoup = BeautifulSoup(shipsA.attrs["data-tooltip-content"], "html.parser")
                     for tr in shipsSoup.findAll("tr"):
                         tds = tr.findAll("td")
