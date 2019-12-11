@@ -6,6 +6,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 from BuildOrder import BuildOrder
 from CombatReport import CombatReport
 from Config import Config
@@ -162,8 +163,10 @@ class IA:
                     taskToExecute = heapq.heappop(self.tasks[prio])
                     try:
                         taskToExecute.execute()
-                    except:
+                    except Exception:
                         log(None, "An exception occured while executing a " + taskToExecute.__class__.__name__)
+                        log(None, "Exception traceback :")
+                        traceback.print_exc()
                         self.watchdog -= self.config.watchdogExceptionDelay
                     taskExecuted = True
             # See if the watchdog wakes
