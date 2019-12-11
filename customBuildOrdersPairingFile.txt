@@ -6,3 +6,4 @@
 #No "=" is allowed in the custom build order name
 Main Planet=Mother
 Colony=Colony
+Colonie=Colony
