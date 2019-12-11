@@ -77,13 +77,15 @@ class Planet:
         config = self.player.ia.config #to make lines smaller
         buildingId = None
         if config.activateCustomBuildOrders and self.customBuildOrder is not None:
-            buildingId = self.customBuildOrder.nextBuilding(self) #id of the building to build
-            if buildingId is None:
-                if self.customBuildOrder.useDefaultBuildPlanWhenEmpty:
+            building = self.customBuildOrder.nextBuilding(self) # the building to build
+            if building is None:
+                if self.customBuildOrder.options.get("useDefaultBuildPlanWhenEmpty", False):
                     buildingId = self.defaultPlanBuildingWithoutHangars()
                 else:
                     log(self, "No more building planned by the custom build order !")
                     return None
+            else:
+                buildingId = building.id
         else:
             buildingId = self.defaultPlanBuildingWithoutHangars()
         buildingId = self.planHangarsInstead(buildingId)

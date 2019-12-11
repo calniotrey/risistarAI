@@ -7,7 +7,6 @@
 useDefaultBuildPlanWhenEmpty=True
 
 #After all settings, the buildings list begins :
-Buildings:
 #Put the id of the building to build on each line
 #1 metal mine
 #2 crystal mine
@@ -54,4 +53,3 @@ Buildings:
 4
 2
 1
-

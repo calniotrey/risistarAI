@@ -3,7 +3,6 @@
 useDefaultBuildPlanWhenEmpty=True
 
 #After all settings, the buildings list begins :
-Buildings:
 #Put the id of the building to build on each line
 1
 1

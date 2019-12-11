@@ -24,6 +24,7 @@ with open("secret.txt") as file:
     password = file.readline().replace("\n", "")  # en clair
 
 class IA:
+    _file = __file__
     config = Config.load()
     error = config.getError()
     if error is not None:
@@ -101,7 +102,7 @@ class IA:
             self.addTask(ColonizeTask(time.time(), self.player))
 
     def loadCustomBuildOrders(self):
-        buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.config.customBuildOrdersDirectoryName)
+        buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(IA._file)), self.config.customBuildOrdersDirectoryName)
         if os.path.exists(buildOrderDirectory):
             buildOrderFiles = [f for f in os.listdir(buildOrderDirectory) if os.path.isfile(os.path.join(buildOrderDirectory, f))]
             for buildOrderFile in buildOrderFiles:
