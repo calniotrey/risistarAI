@@ -8,7 +8,7 @@ from Officer import Officer
 from OfficersPickingOrder import OfficersPickingOrder
 from Planet import Planet
 from Request import Request
-from Research import Research
+from Technology import Technology
 from UtilitiesFunctions import log
 
 class Player:
@@ -22,7 +22,8 @@ class Player:
         self.planets = []
         self.fleets = {} #friendly, own and hostile. Dictionnary id=>fleet
         self.officers = {}
-        self.researchs = {}
+        self.techs = {}
+        self.researchingEnd = None
         self.ia = ia
         self.officersPickingOrder = None
         if ia.config.activatePickingOfficers:
@@ -75,10 +76,10 @@ class Player:
                     pl.scan()
 
     def getFleets(self):
-        researchEspionage = self.researchs.get(106, None)
-        researchEspionageLevel = 0
-        if researchEspionage is not None:
-            researchEspionageLevel = researchEspionage.level
+        techEspionage = self.techs.get(106, None)
+        techEspionageLevel = 0
+        if techEspionage is not None:
+            techEspionageLevel = techEspionage.level
         fleets = {}
         overviewRequest = Request(self.ia.overviewPage, {})
         self.ia.execRequest(overviewRequest)
@@ -98,7 +99,7 @@ class Player:
             ships = {}
             for fleetSpan in fleetsSpans:
                 shipsA = fleetSpan.find("a", class_="tooltip")
-                if shipsA is not None and researchEspionageLevel >= 8:
+                if shipsA is not None and techEspionageLevel >= 8:
                     shipsSoup = BeautifulSoup(shipsA.attrs["data-tooltip-content"], "html.parser")
                     for tr in shipsSoup.findAll("tr"):
                         tds = tr.findAll("td")
@@ -142,20 +143,20 @@ class Player:
                 res.append(p)
         return res
 
-    def scanResearchs(self):
-        researchRequest = Request(self.ia.researchPage + "&cp=" + str(self.ia.config.researchPlanetId), {})
-        self.ia.execRequest(researchRequest)
-        content = researchRequest.content
+    def scanTechs(self):
+        techRequest = Request(self.ia.researchPage + "&cp=" + str(self.ia.config.researchPlanetId), {})
+        self.ia.execRequest(techRequest)
+        content = techRequest.content
         content = content.replace(")</a></div>", ")</div>") #the site is broken here
         content = content.replace("></a></div>", "></div>")
         soup = BeautifulSoup(content, "html.parser")
-        #parse all available researchs
-        researchs = soup.find(id="content").find_all("div", recursive=False)
-        self.researchs = {}
+        #parse all available techs
+        techs = soup.find(id="content").find_all("div", recursive=False)
+        self.techs = {}
         self.researchingEnd = 0
-        for r in researchs:
-            if r.attrs.get("id") == "buildlist": #if it's a researchs being currently researched
-                self.researchingEnd = float(r.find(class_="timer").attrs["data-time"]) #at the end of the loop, it will be the end of the last research
+        for r in techs:
+            if r.attrs.get("id") == "buildlist": #if it's a techs being currently researched
+                self.researchingEnd = float(r.find(class_="timer").attrs["data-time"]) #at the end of the loop, it will be the end of the last tech
             else:
                 nameElement = r.find("a")
                 name = nameElement.text
@@ -198,10 +199,10 @@ class Player:
                 id = Codes.strToId.get(name)
                 if form != None and id == None:
                     id = form.attrs['value']
-                research = Research(name, id, self, level)
-                research.upgradeCost = res
-                research.upgradeTime = upgradeTime
-                self.researchs[id] = research
+                tech = Technology(name, id, self, level)
+                tech.upgradeCost = res
+                tech.upgradeTime = upgradeTime
+                self.techs[id] = tech
 
     def scanOfficers(self):
         officerRequest = Request(self.ia.officerPage, {})
@@ -218,7 +219,7 @@ class Player:
         return soup.find(class_="kategorie") is None
 
     def getMaximumNumberOfPlanets(self):
-        astro = self.researchs.get(124, None)
+        astro = self.techs.get(124, None)
         if astro is None:
             return 1
         return (astro.level + 3) // 2
@@ -232,7 +233,7 @@ class Player:
 
     def getColonizableLocations(self):
         # Returns the colonizable locations in the 'best' order
-        astro = self.researchs.get(124, None)
+        astro = self.techs.get(124, None)
         if astro is None:
             return []
         else:
@@ -248,7 +249,7 @@ class Player:
                 return []
 
     def getMaximumNumberOfExpeditions(self):
-        astro = self.researchs.get(124, None)
+        astro = self.techs.get(124, None)
         if astro is None:
             return 0
         return int(sqrt(astro.level))

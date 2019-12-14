@@ -42,9 +42,9 @@ You can add more custom build orders in the folder (which name is defined in the
 Do not use an "=" in the name of a custom build order file (everything else *should* be ok).
 The AI will give each planet a custom build order according to the planet name.
 To specify which planet name should add which custom build order, you can alter the `customBuildOrdersPairingFile.txt` (name of the file defined in the configuration).
-**DO NOT** add buildings before the needed buildings/researchs/officers for it are taken.
+**DO NOT** add buildings before the needed buildings/techs/officers for it are taken.
 
-In the future, we plan to add a check if the building is buildable (ie. if the buildings/researchs/officiers it needs are taken).
+In the future, we plan to add a check if the building is buildable (ie. if the buildings/techs/officiers it needs are taken).
 Additionally, we are thinking about adding a settings which will allow if the current building isn't buildable to build the next one instead.
 
 ### AutoFleetScan

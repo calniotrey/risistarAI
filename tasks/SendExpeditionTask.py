@@ -27,8 +27,8 @@ class SendExpeditionTask(Task):
                     log(planet, "Launched an expedition!")
         if not stop: #ie no ship to send on any planet
             log(None, "No expedition launched, trying to build a small transporter")
-            combustionResearch = self.player.researchs.get(115, None)
-            if combustionResearch is not None and combustionResearch.level >= 2:
+            combustionTech = self.player.techs.get(115, None)
+            if combustionTech is not None and combustionTech.level >= 2:
                 for planet in self.player.planets:
                     if not stop and planet.metal >= 2000 and planet.crystal >= 2000 and planet.deut >= 10:
                         spacePort = planet.buildingById(21)

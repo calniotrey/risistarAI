@@ -1,6 +1,6 @@
 from Request import Request
 
-class Research:
+class Technology:
     def __init__(self, type, id, player, level=0):
         self.type = type
         self.level = level
@@ -18,6 +18,6 @@ class Research:
     def upgrade(self):
         if self.id != None:
             payload = {'cmd': 'insert', 'tech': self.id}
-            reqB = Request(self.player.ia.researchPage + "&cp=" + str(self.player.ia.config.researchPlanetId), payload)
+            reqB = Request(self.player.ia.techPage + "&cp=" + str(self.player.ia.config.techPlanetId), payload)
             self.player.ia.execRequest(reqB)
             return reqB

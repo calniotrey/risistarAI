@@ -81,7 +81,7 @@ class IA:
         self.player = Player(self.pseudo, self.password, "Risistar", self)
         self.player.connexion()
         self.player.extractInfos(planets=True, darkMatter=True)
-        self.player.scanResearchs()
+        self.player.scanTechs()
         self.tasks = {}
         self.tasks[Task.lowPrio   ] = [] #building, technos ...
         self.tasks[Task.middlePrio] = [] #scanning fleets
