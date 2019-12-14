@@ -1,0 +1,51 @@
+#This is a comment
+#Comments and empty lines are allowed
+
+#If all techs listed here are built, should the ai use it's own tech logic ?
+useDefaultTechPlanWhenEmpty=True
+
+#After all settings, the techs list begins :
+#Put the id of the tech to research on each line
+
+# First rush small cargo
+# Energy level 1
+113
+# Combustion level 2
+115:2
+
+#Then rush colony ships
+# Espionage level 3
+106:3
+# Impulsion propulsion level 3
+117:3
+# Astrophysic level 1
+124
+
+# Then take 2 level in computer to evade while colonizing and making expeditions
+# Computer to level 2
+108:2
+
+# Then take the techs for large cargo
+# Combustion from 2 to 6
+115:4
+
+# Then take the techs for small laser to be able to dump remaining crystal in case of an attack
+# Energy from 1 to 2
+113
+
+# Laser to level 3
+120:3
+
+# Then take 2 more levels in Astrophysic
+# Astrophysic from 1 to 3
+124:2
+
+# Then take 1 more level in computer to evade while colonizing and making expeditions
+# Computer from 2 to 3
+108
+
+# Finally unlock the resources production upgrade tech
+# Energy from 2 to 5
+113:3
+
+# Then we can fallback to the ai own logic (hopefully)

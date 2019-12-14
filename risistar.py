@@ -16,6 +16,7 @@ from tasks.Task import Task
 from tasks.CheckAchievementsTask import CheckAchievementsTask
 from tasks.ColonizeTask import ColonizeTask
 from tasks.PickOfficerTask import PickOfficerTask
+from tasks.PickTechTask import PickTechTask
 from tasks.PlanningTask import PlanningTask
 from tasks.ScanFleetsTask import ScanFleetsTask
 from UtilitiesFunctions import log
@@ -95,6 +96,8 @@ class IA:
             for p in self.player.planets:
                 if not p.isMoon:
                     self.addTask(PlanningTask(time.time(), p))
+        if self.config.activateAutoResearch:
+            self.addTask(PickTechTask(time.time(), self.player))
         if self.config.activateAutoFleetScan:
             self.addTask(ScanFleetsTask(time.time(), self.player, 0))
         if self.config.activatePickingOfficers:
@@ -131,6 +134,13 @@ class IA:
 
     def addTask(self, t):
         heapq.heappush(self.tasks[t.prio], t)
+
+    def hasTaskOfType(self, type):
+        for prio in Task.descendingPrio:
+            for task in self.tasks[prio]:
+                if isinstance(task, type):
+                    return True
+        return False
 
     def checkWatchdog(self): # Returns True if the watchdog wakes
         timeUntilWatchdog = self.watchdog - time.time()
