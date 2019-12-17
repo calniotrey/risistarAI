@@ -29,6 +29,7 @@ class Planet:
         self.energyStorage = None
         self.lastExtracedInfosDate = None
         self.upgradingEnd = 0 #when the last upgrade will finish. Either 0 or time.time() + rest
+        self.upgradingBuildingsId = [] # List of (id, end) with id of the buildings being upgraded and end of the construction
         self.isMoon = "(Lune)" in name
         self.sizeUsed = None
         self.sizeMax = None
@@ -73,31 +74,37 @@ class Planet:
             return True
         return False
 
+    def getTimeToWaitForResources(self, resourcesWanted):
+        resources = [x for x in resourcesWanted] # copy to not change original list
+        resources[0] = (resources[0] - self.metal) / self.metalProduction
+        resources[1] = (resources[1] - self.crystal) /  self.crystalProduction
+        if self.deutProduction == 0:
+            resources[2] = 0 if (self.deut - resources[2]) >= 0 else math.inf
+        else:
+            resources[2] = (resources[2] - self.deut) /  self.deutProduction
+        resources.append(0) #to ensure that the wait time is at least 0
+        timeToWait = max(resources)
+        return timeToWait
+
     def planBuilding(self):
         config = self.player.ia.config #to make lines smaller
         buildingId = None
         if config.activateCustomBuildOrders and self.customBuildOrder is not None:
-            buildingId = self.customBuildOrder.nextBuilding(self) #id of the building to build
-            if buildingId is None:
-                if self.customBuildOrder.useDefaultBuildPlanWhenEmpty:
+            building = self.customBuildOrder.nextBuilding(self) # the building to build
+            if building is None:
+                if self.customBuildOrder.options.get("useDefaultBuildPlanWhenEmpty", False):
                     buildingId = self.defaultPlanBuildingWithoutHangars()
                 else:
                     log(self, "No more building planned by the custom build order !")
                     return None
+            else:
+                buildingId = building.id
         else:
             buildingId = self.defaultPlanBuildingWithoutHangars()
         buildingId = self.planHangarsInstead(buildingId)
         building = self.buildingById(buildingId)
         #now we need to know how much to wait
-        t = [x for x in building.upgradeCost] #the ressources needed
-        t[0] = (t[0] - self.metal) / self.metalProduction
-        t[1] = (t[1] - self.crystal) /  self.crystalProduction
-        if self.deutProduction == 0:
-            t[2] = 0 if (self.deut - t[2]) >= 0 else math.inf
-        else:
-            t[2] = (t[2] - self.deut) /  self.deutProduction
-        t.append(0) #to ensure that the task execute time is at least time.time()
-        timeToWait = max(t)
+        timeToWait = self.getTimeToWaitForResources(building.upgradeCost)
         task = BuildingTask(time.time() + timeToWait, building)
         self.player.ia.addTask(task)
         return task
@@ -151,9 +158,13 @@ class Planet:
         bats = soup.find(id="content").find_all("div", recursive=False)
         self.batiments = []
         self.upgradingEnd = 0
+        self.upgradingBuildingsId = []
         for b in bats:
             if b.attrs.get("id") == "buildlist": #if it's a building currently building
-                self.upgradingEnd = float(b.find(class_="timer").attrs["data-time"]) #at the end of the loop, it will be the end of the last building
+                endTime = float(b.find(class_="timer").attrs["data-time"])
+                self.upgradingEnd = endTime #at the end of the loop, it will be the end of the last building
+                buildingId = int(b.find("input", attrs={"name": "building"}).attrs["value"])
+                self.upgradingBuildingsId.append((buildingId, endTime))
             else:
                 nameAndLevelText = b.find("a").text
                 nameAndLevel = self.player.ia.buildingNameParser.findall(nameAndLevelText)

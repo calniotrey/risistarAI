@@ -6,6 +6,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 from BuildOrder import BuildOrder
 from CombatReport import CombatReport
 from Config import Config
@@ -15,6 +16,7 @@ from tasks.Task import Task
 from tasks.CheckAchievementsTask import CheckAchievementsTask
 from tasks.ColonizeTask import ColonizeTask
 from tasks.PickOfficerTask import PickOfficerTask
+from tasks.PickTechTask import PickTechTask
 from tasks.PlanningTask import PlanningTask
 from tasks.ScanFleetsTask import ScanFleetsTask
 from UtilitiesFunctions import log
@@ -24,6 +26,7 @@ with open("secret.txt") as file:
     password = file.readline().replace("\n", "")  # en clair
 
 class IA:
+    _file = __file__
     config = Config.load()
     error = config.getError()
     if error is not None:
@@ -79,7 +82,7 @@ class IA:
         self.player = Player(self.pseudo, self.password, "Risistar", self)
         self.player.connexion()
         self.player.extractInfos(planets=True, darkMatter=True)
-        self.player.scanResearchs()
+        self.player.scanTechs()
         self.tasks = {}
         self.tasks[Task.lowPrio   ] = [] #building, technos ...
         self.tasks[Task.middlePrio] = [] #scanning fleets
@@ -93,6 +96,8 @@ class IA:
             for p in self.player.planets:
                 if not p.isMoon:
                     self.addTask(PlanningTask(time.time(), p))
+        if self.config.activateAutoResearch:
+            self.addTask(PickTechTask(time.time(), self.player))
         if self.config.activateAutoFleetScan:
             self.addTask(ScanFleetsTask(time.time(), self.player, 0))
         if self.config.activatePickingOfficers:
@@ -101,7 +106,7 @@ class IA:
             self.addTask(ColonizeTask(time.time(), self.player))
 
     def loadCustomBuildOrders(self):
-        buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.config.customBuildOrdersDirectoryName)
+        buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(IA._file)), self.config.customBuildOrdersDirectoryName)
         if os.path.exists(buildOrderDirectory):
             buildOrderFiles = [f for f in os.listdir(buildOrderDirectory) if os.path.isfile(os.path.join(buildOrderDirectory, f))]
             for buildOrderFile in buildOrderFiles:
@@ -129,6 +134,13 @@ class IA:
 
     def addTask(self, t):
         heapq.heappush(self.tasks[t.prio], t)
+
+    def hasTaskOfType(self, type):
+        for prio in Task.descendingPrio:
+            for task in self.tasks[prio]:
+                if isinstance(task, type):
+                    return True
+        return False
 
     def checkWatchdog(self): # Returns True if the watchdog wakes
         timeUntilWatchdog = self.watchdog - time.time()
@@ -161,8 +173,10 @@ class IA:
                     taskToExecute = heapq.heappop(self.tasks[prio])
                     try:
                         taskToExecute.execute()
-                    except:
+                    except Exception:
                         log(None, "An exception occured while executing a " + taskToExecute.__class__.__name__)
+                        log(None, "Exception traceback :")
+                        traceback.print_exc()
                         self.watchdog -= self.config.watchdogExceptionDelay
                     taskExecuted = True
             # See if the watchdog wakes

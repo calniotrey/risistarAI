@@ -7,6 +7,7 @@ userAgent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Fire
 ## Features activation
 activateAutoBuild=True
 activateCustomBuildOrders=False
+activateAutoResearch=True
 activateAutoFleetScan=True
 activateDefenderDiscordPing=False
 activateAutoEvasion=False
@@ -31,6 +32,9 @@ customBuildOrdersPairingFile=customBuildOrdersPairingFile.txt
 minimumTimeBetweenScans=30
 randomAdditionnalTimeBetweenScans=10
 
+## Auto Tech settings
+techsPickingOrderFile=techsPickingOrder.txt
+
 ##Ennemy fleet discord ping
 webhookUrl=None
 idToPing=None
@@ -50,8 +54,6 @@ launchExpeditionSeparately=True
 
 ##Getting Officers settings
 officersPickingOrderFile=officersPickingOrder.txt
-
-researchPlanetId=0
 
 ## Watchdog
 # The default delay in seconds between each reinitialization of the AI

@@ -6,6 +6,7 @@ class Config:
         self.userAgent = None
         self.activateAutoBuild = None
         self.activateCustomBuildOrders = None
+        self.activateAutoResearch = None
         self.activateAutoFleetScan = None
         self.activateDefenderDiscordPing = None
         self.activateAutoEvasion = None
@@ -16,6 +17,7 @@ class Config:
         self.robotStartingLevel = None
         self.customBuildOrdersDirectoryName = None
         self.customBuildOrdersPairingFile = None
+        self.techsPickingOrderFile = None
         self.minimumTimeBetweenScans = None
         self.randomAdditionnalTimeBetweenScans = None
         self.webhookUrl = None
@@ -25,7 +27,6 @@ class Config:
         self.minimumSpottingTime = None
         self.launchExpeditionSeparately = None
         self.officersPickingOrderFile = None
-        self.researchPlanetId = None
         self.watchdogDelay = None
         self.watchdogExceptionDelay = None
         self.watchdogEarlyDelay = None
@@ -55,6 +56,8 @@ class Config:
                         self.activateAutoBuild = value == "True"
                     elif key == "activateCustomBuildOrders":
                         self.activateCustomBuildOrders = value == "True"
+                    elif key == "activateAutoResearch":
+                        self.activateAutoResearch = value == "True"
                     elif key == "activateAutoFleetScan":
                         self.activateAutoFleetScan = value == "True"
                     elif key == "activateDefenderDiscordPing":
@@ -75,6 +78,8 @@ class Config:
                         self.customBuildOrdersDirectoryName = value
                     elif key == "customBuildOrdersPairingFile":
                         self.customBuildOrdersPairingFile = value
+                    elif key == "techsPickingOrderFile":
+                        self.techsPickingOrderFile = value
                     elif key == "minimumTimeBetweenScans":
                         self.minimumTimeBetweenScans = int(value)
                     elif key == "randomAdditionnalTimeBetweenScans":
@@ -93,8 +98,6 @@ class Config:
                         self.officersPickingOrderFile = value
                     elif key == "launchExpeditionSeparately":
                         self.launchExpeditionSeparately = value == "True"
-                    elif key == "researchPlanetId":
-                        self.researchPlanetId = int(value)
                     elif key == "watchdogDelay":
                         self.watchdogDelay = int(value)
                     elif key == "watchdogExceptionDelay":
