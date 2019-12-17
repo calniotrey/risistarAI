@@ -1,10 +1,10 @@
 import time
 
-def log(planet, str, isError=False):
+def log(planet, string, isError=False):
     if planet != None:
-        print(time.strftime("%H:%M:%S"), " [", planet.id, "] ", str, sep='')
+        print(time.strftime("%H:%M:%S"), " [", str(planet.id), "] ", string, sep='')
     else:
-        print(time.strftime("%H:%M:%S"), " [   ] ", str, sep='')
+        print(time.strftime("%H:%M:%S"), " [   ] ", string, sep='')
 
 def is_number(n):
     is_number = True

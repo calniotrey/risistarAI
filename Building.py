@@ -19,6 +19,6 @@ class Building:
     def upgrade(self):
         if self.id != None:
             payload = {'cmd': 'insert', 'building': self.id}
-            reqB = Request(self.planet.player.ia.buildingPage + "&cp=" + self.planet.id, payload)
+            reqB = Request(self.planet.player.ia.buildingPage + "&cp=" + str(self.planet.id), payload)
             self.planet.player.ia.execRequest(reqB)
             return reqB
