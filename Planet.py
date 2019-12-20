@@ -37,6 +37,9 @@ class Planet:
         self.customBuildOrder = None
         self.lastKnownSystem = []
 
+    def __repr__(self):
+        return "Planet (id %i position %s)" % (self.id, self.getPosAsString())
+
     def buildingById(self, id):
         for b in self.batiments:
             if b.id == id:

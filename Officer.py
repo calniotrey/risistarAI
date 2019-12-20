@@ -11,6 +11,9 @@ class Officer:
         self.id = id
         self.darkMatterCost = None
 
+    def __repr__(self):
+        return "Officer (id %i, type %s, level %i)" % (self.id, self.type, self.level)
+
     def upgradable(self, availableDarkMatter):
         return self.darkMatterCost > availableDarkMatter
 
