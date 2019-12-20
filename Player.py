@@ -80,10 +80,7 @@ class Player:
                     pl.scan()
 
     def getFleets(self):
-        techEspionage = self.techs.get(106, None)
-        techEspionageLevel = 0
-        if techEspionage is not None:
-            techEspionageLevel = techEspionage.level
+        techEspionageLevel = self.getTechLevel(106)
         fleets = {}
         overviewRequest = Request(self.ia.overviewPage, {})
         self.ia.execRequest(overviewRequest)
@@ -230,12 +227,18 @@ class Player:
                     tech = self.chooseTechToPickByDefault()
                 else:
                     log(self, "No more techs planned by the technology picking order !")
-                    return None
+                    return None, None
         else:
             tech = self.chooseTechToPickByDefault()
         if tech is not None:
             # Now we need to find a suitable planet to research it
-            level, planet = self.getPlanetsWithBuildingOrderedByLevel(31)[0] # The planet with highest lab
+            isLabUpgrading = lambda p: True in [t[0] == 31 for t in p.upgradingBuildingsId]
+            # The list contains a True if a research lab is being built or upgraded on this planet
+            condition = lambda p: not isLabUpgrading(p) and tech.requirementsMet(p)
+            list = self.getPlanetsWithBuildingOrderedByLevelWithCondition(31, condition)
+            if len(list) == 0: # No research lab that isn't upgrading or that mets requirements
+                return None, None
+            level, planet = list[0] # The planet with highest lab and that lab isn't upgraded
             return tech, planet
 
     def chooseTechToPickByDefault(self):
@@ -266,20 +269,28 @@ class Player:
         soup = BeautifulSoup(checkAchievementRequest.content, "html.parser")
         return soup.find(class_="kategorie") is None
 
+    def getTechLevel(self, techId):
+        tech = self.techs.get(techId, None)
+        if tech is None:
+            return 0
+        return tech.level
+
     def getPlanetsWithBuildingOrderedByLevel(self, buildingId, descendingOrder=True):
+        condition = lambda x: True
+        return self.getPlanetsWithBuildingOrderedByLevelWithCondition(buildingId, condition, descendingOrder)
+
+    def getPlanetsWithBuildingOrderedByLevelWithCondition(self, buildingId, condition, descendingOrder=True):
         list = []
         for planet in self.planets:
             buildingLevel = planet.buildingLevelById(buildingId)
-            if buildingLevel > 0:
+            if buildingLevel > 0 and condition(planet):
                 list.append((buildingLevel, planet))
         list.sort(key=lambda x:x[0], reverse=descendingOrder)
         return list
 
     def getMaximumNumberOfPlanets(self):
-        astro = self.techs.get(124, None)
-        if astro is None:
-            return 1
-        return (astro.level + 3) // 2
+        astroLevel = self.getTechLevel(124)
+        return (astroLevel + 3) // 2
 
     def getActualNumberOfPlanets(self):
         number = 0
@@ -290,26 +301,21 @@ class Player:
 
     def getColonizableLocations(self):
         # Returns the colonizable locations in the 'best' order
-        astro = self.techs.get(124, None)
-        if astro is None:
-            return []
+        astroLevel = self.getTechLevel(124)
+        if astroLevel >= 8:
+            return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
+        elif astroLevel >= 4:
+            return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14]
+        elif astroLevel >= 2:
+            return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13]
+        elif astroLevel >= 1:
+            return [8, 7, 9, 6, 10, 5, 11, 4, 12]
         else:
-            if astro.level >= 8:
-                return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
-            elif astro.level >= 4:
-                return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14]
-            elif astro.level >= 2:
-                return [8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13]
-            elif astro.level >= 1:
-                return [8, 7, 9, 6, 10, 5, 11, 4, 12]
-            else:
-                return []
+            return []
 
     def getMaximumNumberOfExpeditions(self):
-        astro = self.techs.get(124, None)
-        if astro is None:
-            return 0
-        return int(sqrt(astro.level))
+        astroLevel = self.getTechLevel(124)
+        return int(sqrt(astroLevel))
 
     def getActualNumberOfExpeditions(self):
         number = 0

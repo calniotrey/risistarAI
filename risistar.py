@@ -142,6 +142,13 @@ class IA:
                     return True
         return False
 
+    def getNextTaskOfType(self, type):
+        for prio in Task.descendingPrio:
+            for task in self.tasks[prio]:
+                if isinstance(task, type):
+                    return task
+        return None
+
     def checkWatchdog(self): # Returns True if the watchdog wakes
         timeUntilWatchdog = self.watchdog - time.time()
         if timeUntilWatchdog <= 0:

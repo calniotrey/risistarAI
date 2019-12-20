@@ -2,6 +2,7 @@ import time
 from Codes import Codes
 from tasks.Task import Task
 from tasks.ColonizeTask import ColonizeTask
+from tasks.PlanningTask import PlanningTask
 from UtilitiesFunctions import log
 
 class PickTechTask(Task):
@@ -48,3 +49,16 @@ class PickTechTask(Task):
                         newTaskTime = planet.upgradingBuildingsId[0][1]
                     newTask = PickTechTask(newTaskTime, self.player)
                     self.player.ia.addTask(newTask)
+            else:
+                # This means no planet meets the requirements for the tech
+                # 2 cases :
+                # Either another tech is required (this comes from a bad tech pick order), we won't do anything
+                # We need a bigger lab that isn't upgrading. So just wait for the next building to end.
+                nextBuildingTask = self.player.ia.getNextTaskOfType(PlanningTask)
+                if nextBuildingTask is None: # Shouldn't happen
+                    newTaskTime = time.time() + 30
+                else:
+                    newTaskTime = nextBuildingTask.t + 1
+                newTask = PickTechTask(newTaskTime, self.player)
+                self.player.ia.addTask(newTask)
+                log(planet, "Requirements not met for the choosed tech. Waiting for the next building to finish in %f" % (newTaskTime - self.t))
