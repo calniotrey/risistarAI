@@ -33,6 +33,9 @@ class Player:
         if ia.config.activateAutoResearch:
             self.techsPickingOrder = TechsPickingOrder(filePath=ia.config.techsPickingOrderFile)
 
+    def __repr__(self):
+        return "Player (pseudo %s)" % (self.pseudo)
+
     def connexion(self):
         payload = {
             'username' : self.pseudo,

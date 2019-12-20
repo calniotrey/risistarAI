@@ -9,6 +9,9 @@ class Technology:
         self.upgradeTime = None
         self.upgradeCost = None
 
+    def __repr__(self):
+        return "Technology (id %i, type %s, level %i)" % (self.id, self.type, self.level)
+
     def upgradable(self, ressources):
         for i in range(0,3):
             if self.upgradeCost[i] > ressources[i]:

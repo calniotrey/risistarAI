@@ -9,6 +9,9 @@ class Request:
         self.date = time.time()
         self.content = None
 
+    def __repr__(self):
+        return "Request (url %s, payload %s)" % (self.url, str(self.payload))
+
     def connect(self, session):
         connected = False
         while not connected:
