@@ -10,7 +10,7 @@ from UtilitiesFunctions import log
 
 class Planet:
     def __init__(self, id, name, position, player):
-        self.id = id        #string
+        self.id = id        # integer
         self.name = name
         self.pos = position
         self.player = player
@@ -59,7 +59,7 @@ class Planet:
         return self.name + " (" + str(self.sizeUsed) + "/" + str(self.sizeMax) + ")"
 
     def getSize(self):
-        reqP = Request(self.player.ia.overviewPage + "&cp=" + self.id, {})
+        reqP = Request(self.player.ia.overviewPage + "&cp=" + str(self.id), {})
         self.player.ia.execRequest(reqP)
         soup = BeautifulSoup(reqP.content, "html.parser")
         #parse the size
@@ -67,7 +67,7 @@ class Planet:
         self.sizeMax = int(soup.find(attrs={"title": 'Cases max. disponibles'}).text)
 
     def rename(self, name): #Returns true if renaming worked
-        reqP = Request(self.player.ia.renamingPage + name + "&cp=" + self.id, {})
+        reqP = Request(self.player.ia.renamingPage + name + "&cp=" + str(self.id), {})
         response = self.player.ia.execRequest(reqP)
         if reqP.response.status_code == 200:
             self.name = name
@@ -148,7 +148,7 @@ class Planet:
         return [bat for bat in self.batimens if bat.upgradable(ressources)]
 
     def scan(self):
-        reqB = Request(self.player.ia.buildingPage + "&cp=" + self.id, {})
+        reqB = Request(self.player.ia.buildingPage + "&cp=" + str(self.id), {})
         self.player.ia.execRequest(reqB)
         self.scanUsingRequest(reqB)
 
@@ -251,7 +251,7 @@ class Planet:
         return [em, ec, ed]
 
     def scanShips(self):
-        scanShipsRequest = Request(self.player.ia.scanShipsPage + "&cp=" + self.id, {})
+        scanShipsRequest = Request(self.player.ia.scanShipsPage + "&cp=" + str(self.id), {})
         self.player.ia.execRequest(scanShipsRequest)
         soup = BeautifulSoup(scanShipsRequest.content, "html.parser")
         #parse all available ships
@@ -269,7 +269,7 @@ class Planet:
         for shipId in ships.keys():
             if shipId not in [212, 227, 228, 229, 230, 231]:
                 firstPayload["ship" + str(shipId)] = ships[shipId]
-        sendFleetStep1 = Request(self.player.ia.sendFleetStep1Page + "&cp=" + self.id, firstPayload)
+        sendFleetStep1 = Request(self.player.ia.sendFleetStep1Page + "&cp=" + str(self.id), firstPayload)
         self.player.ia.execRequest(sendFleetStep1)
         soup = BeautifulSoup(sendFleetStep1.content, "html.parser")
         tokenInput = soup.find("input", attrs={"name":"token"})
@@ -282,7 +282,7 @@ class Planet:
             secondPayload["type"  ] = target[3] #1 = planet, 2 = CDR, 3 = moon
             secondPayload["speed" ] = speed #the speed in multiples of 10%
             secondPayload["token" ] = token
-            sendFleetStep2 = Request(self.player.ia.sendFleetStep2Page + "&cp=" + self.id, secondPayload)
+            sendFleetStep2 = Request(self.player.ia.sendFleetStep2Page + "&cp=" + str(self.id), secondPayload)
             self.player.ia.execRequest(sendFleetStep2)
             thirdPayload = {}
             if allRessources:
@@ -322,7 +322,7 @@ class Planet:
             thirdPayload["mission"  ] = missionType
             thirdPayload["staytime" ] = staytime
             thirdPayload["token"    ]  = token
-            sendFleetStep3 = Request(self.player.ia.sendFleetStep3Page + "&cp=" + self.id, thirdPayload)
+            sendFleetStep3 = Request(self.player.ia.sendFleetStep3Page + "&cp=" + str(self.id), thirdPayload)
             self.player.ia.execRequest(sendFleetStep3)
             log(self, "Fleet sent")
         else:
@@ -332,21 +332,21 @@ class Planet:
         payload = {}
         for id in defenses.keys():
             payload["fmenge[" + str(id) + "]"] = defenses[id]
-        buildDefReq = Request(self.player.ia.buildDefPage + "&cp=" + self.id, payload)
+        buildDefReq = Request(self.player.ia.buildDefPage + "&cp=" + str(self.id), payload)
         self.player.ia.execRequest(buildDefReq)
 
     def buildShips(self, ships):
         payload = {}
         for id in ships.keys():
             payload["fmenge[" + str(id) + "]"] = ships[id]
-        buildShipReq = Request(self.player.ia.buildShipPage + "&cp=" + self.id, payload)
+        buildShipReq = Request(self.player.ia.buildShipPage + "&cp=" + str(self.id), payload)
         self.player.ia.execRequest(buildShipReq)
 
     def scanSystem(self, galaxy, system): #TODO add check for not enough deut
         payload = {}
         payload["galaxy"] = galaxy
         payload["system"] = system
-        scanSystemRequest = Request(self.player.ia.galaxyPage + "&cp=" + self.id, payload)
+        scanSystemRequest = Request(self.player.ia.galaxyPage + "&cp=" + str(self.id), payload)
         self.player.ia.execRequest(scanSystemRequest)
         soup = BeautifulSoup(scanSystemRequest.content, "html.parser")
         #parse all available locations

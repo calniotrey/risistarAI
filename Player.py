@@ -68,7 +68,7 @@ class Player:
                 self.planets = []
                 for p in ps:
                     planet = self.ia.planetNameParser.findall(str(p))
-                    id = p.attrs['value']
+                    id = int(p.attrs['value'])
                     name = planet[0][0]
                     position = [int(x) for x in planet[0][1].split(":")]
                     if "Lune" in name:
