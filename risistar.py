@@ -54,6 +54,7 @@ class IA:
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
+    buildingWaitListNameParser = re.compile(r'\d+\.: (.*) \d+')
     metalProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_metal"')
     crystalProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_crystal"')
     deutProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_deuterium"')

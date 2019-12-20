@@ -164,10 +164,20 @@ class Planet:
         self.upgradingBuildingsId = []
         for b in bats:
             if b.attrs.get("id") == "buildlist": #if it's a building currently building
-                endTime = float(b.find(class_="timer").attrs["data-time"])
-                self.upgradingEnd = endTime #at the end of the loop, it will be the end of the last building
-                buildingId = int(b.find("input", attrs={"name": "building"}).attrs["value"])
-                self.upgradingBuildingsId.append((buildingId, endTime))
+                # This b regroups all buildings in the building list
+                trs = b.find_all("tr")
+                for tr in trs: # This way we have one building in each tr
+                    endTime = float(tr.find(class_="timer").attrs["data-time"])
+                    self.upgradingEnd = endTime #at the end of the loop, it will be the end of the last building
+                    input = tr.find("input", attrs={"name": "building"})
+                    if input is None: # Happens when the construction list is full
+                        td = tr.td
+                        nameToParse = td.text # Looks like 1.: Synthétiseur de Deutérium 16 
+                        name = self.player.ia.buildingWaitListNameParser.findall(nameToParse)[0]
+                        buildingId = Codes.strToId[name]
+                    else:
+                        buildingId = int(input.attrs["value"])
+                    self.upgradingBuildingsId.append((buildingId, endTime))
             else:
                 nameAndLevelText = b.find("a").text
                 nameAndLevel = self.player.ia.buildingNameParser.findall(nameAndLevelText)
