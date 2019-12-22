@@ -25,10 +25,6 @@ useDefaultTechPlanWhenEmpty=True
 # Computer to level 2
 108:2
 
-# Then take the techs for large cargo
-# Combustion from 2 to 6
-115:4
-
 # Then take the techs for small laser to be able to dump remaining crystal in case of an attack
 # Energy from 1 to 2
 113
@@ -44,8 +40,24 @@ useDefaultTechPlanWhenEmpty=True
 # Computer from 2 to 3
 108
 
+# Unlock spying
+# Combustion from 2 to 3
+115
+
+# Take one more level in Astrophysic for double expeditions
+# Astrophysic from 3 to 4
+124
+
+# Then take 1 more level in computer to evade while colonizing and making expeditions
+# Computer from 3 to 4
+108
+
 # Finally unlock the resources production upgrade tech
 # Energy from 2 to 5
 113:3
+
+# Then take the techs for large cargo
+# Combustion from 3 to 6
+115:3
 
 # Then we can fallback to the ai own logic (hopefully)
