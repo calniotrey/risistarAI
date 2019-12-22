@@ -148,10 +148,15 @@ class Player:
         return res
 
     def scanTechs(self):
-        level, planet = self.getPlanetsWithBuildingOrderedByLevel(31)[0]
-        techRequest = Request(self.ia.researchPage + "&cp=" + str(planet.id), {})
-        self.ia.execRequest(techRequest)
-        self.scanTechsUsingRequest(techRequest)
+        list = self.getPlanetsWithBuildingOrderedByLevel(31)
+        if len(list):
+            level, planet = list[0]
+            techRequest = Request(self.ia.researchPage + "&cp=" + str(planet.id), {})
+            self.ia.execRequest(techRequest)
+            planet.scanRessourcesUsingRequest(techRequest)
+            self.scanTechsUsingRequest(techRequest)
+        else:
+            self.techs = {}
 
     def scanTechsUsingRequest(self, techRequest):
         content = techRequest.content
