@@ -108,7 +108,7 @@ class Planet:
         building = self.buildingById(buildingId)
         #now we need to know how much to wait
         timeToWait = self.getTimeToWaitForResources(building.upgradeCost)
-        task = BuildingTask(planet.lastExtracedInfosDate + timeToWait, building)
+        task = BuildingTask(self.lastExtracedInfosDate + timeToWait, building)
         self.player.ia.addTask(task)
         return task
 
