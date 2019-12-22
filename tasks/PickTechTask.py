@@ -32,7 +32,7 @@ class PickTechTask(Task):
         else:
             tech, planet = self.player.chooseTechToPick()
             if tech is not None:
-                if tech.upgradable([planet.metal, planet.crystal, planet.deut]):
+                if tech.upgradable(planet.expectedRessources()):
                     req = tech.upgrade(planet.id)
                     self.player.scanTechsUsingRequest(self.player.lastRequest)
                     log(planet, "Researching %s in %s" % (tech.type, str(self.player.researchEnd - time.time())))
@@ -42,7 +42,7 @@ class PickTechTask(Task):
                     #now we need to know how much to wait
                     log(planet, "Waiting for resources for tech %s" % tech.type)
                     timeToWait = planet.getTimeToWaitForResources(tech.upgradeCost)
-                    timeToStart = time.time() + timeToWait
+                    timeToStart = planet.lastExtracedInfosDate + timeToWait
                     newTaskTime = timeToStart
                     if len(planet.upgradingBuildingsId) and planet.upgradingBuildingsId[0][1] < timeToStart:
                         # A building is planned before we can start the research

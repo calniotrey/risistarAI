@@ -108,7 +108,7 @@ class Planet:
         building = self.buildingById(buildingId)
         #now we need to know how much to wait
         timeToWait = self.getTimeToWaitForResources(building.upgradeCost)
-        task = BuildingTask(time.time() + timeToWait, building)
+        task = BuildingTask(planet.lastExtracedInfosDate + timeToWait, building)
         self.player.ia.addTask(task)
         return task
 
@@ -247,12 +247,14 @@ class Planet:
         for batiment in self.batiments:
             sizeUsed += batiment.level
         self.sizeUsed = sizeUsed
+        self.lastExtracedInfosDate = time.time()
 
     def scanRessourcesUsingRequest(self, req):
         soup = BeautifulSoup(req.content, "html.parser")
         self.metal = float(soup.find(id="current_metal").attrs['data-real'])
         self.crystal = float(soup.find(id="current_crystal").attrs['data-real'])
         self.deut = float(soup.find(id="current_deuterium").attrs['data-real'])
+        self.lastExtracedInfosDate = time.time()
 
     def expectedRessources(self, timeTarget=time.time(), takeStorageInAccount=True):
         t = (timeTarget - self.lastExtracedInfosDate) / 3600
