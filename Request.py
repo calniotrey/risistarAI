@@ -17,7 +17,11 @@ class Request:
         while not connected:
             try:
                 self.response = session.post(self.url, data=self.payload)
-                connected = True
+                if self.response.status_code != 503 and self.response.status_code != 500:
+                    connected = True
+                else:
+                    log(None, "Error %i while accessing %s" % (self.response.status_code, self.url))
+                    time.sleep(1)
             except:
                 log(None, "Error while sending request, sleeping for 10 seconds")
                 time.sleep(10)
