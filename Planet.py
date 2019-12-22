@@ -34,6 +34,7 @@ class Planet:
         self.sizeUsed = None
         self.sizeMax = None
         self.ships = {}
+        self.shipQueueTime = None
         self.customBuildOrder = None
         self.lastKnownSystem = []
 
@@ -58,8 +59,42 @@ class Planet:
                 return b
         return None
 
+    def canBuildSolarSatellites(self):
+        centrale = self.buildingByType('Centrale éléctrique Solaire').level
+        # If energy is positve there is no need to build solar satellite
+        if self.energy > 0:
+            return False
+        # If required metal mine level is not reached, we don't build solar satellite
+        if (centrale < self.player.ia.config.solarSatelliteStartingLevel):
+            return False
+        # If the waiting queue is more than 5 minutes, we don't build solar satellites
+        if self.getShipQueueTime() is not None and self.getShipQueueTime() > 300:
+            return False
+        # If we don't have enough ressources, we don't build solar satellites
+        if self.crystal < 2000 or self.deut < 500:
+            return False
+        # If too many satellite alread have been constructed
+        self.scanShips()
+        if 212 in self.ships and self.ships[212] > (centrale - self.player.ia.config.solarSatelliteStartingLevel + 1) * self.player.ia.config.maxSatelliteNumberPerCentrale:
+            return False
+        # If all conditions are matched, we begin the production
+        return True
+
     def getNameWithSize(self):
         return self.name + " (" + str(self.sizeUsed) + "/" + str(self.sizeMax) + ")"
+
+    def getShipQueueTime(self):
+        reqP = Request(self.player.ia.buildShipPage + "&cp=" + str(self.id), {})
+        self.player.ia.execRequest(reqP)
+        soup = BeautifulSoup(reqP.content, "html.parser")
+        # parse the ship build queue time
+        script = soup.find_all("script")[9].text
+        if "\"pretty_time_b_hangar\":\"" not in script:
+            self.shipQueueTime = None
+        else:
+            string = script.split("\"pretty_time_b_hangar\":\"")[1].split("\"};")[0]
+            split = string.split(" ")
+            self.shipQueueTime = int(split[0].replace("h", "")) * 3600 + int(split[1].replace("m", "")) * 60 + int(split[2].replace("s", ""))
 
     def getSize(self):
         reqP = Request(self.player.ia.overviewPage + "&cp=" + str(self.id), {})
@@ -172,7 +207,7 @@ class Planet:
                     input = tr.find("input", attrs={"name": "building"})
                     if input is None: # Happens when the construction list is full
                         td = tr.td
-                        nameToParse = td.text # Looks like 1.: Synthétiseur de Deutérium 16 
+                        nameToParse = td.text # Looks like 1.: Synthétiseur de Deutérium 16
                         name = self.player.ia.buildingWaitListNameParser.findall(nameToParse)[0]
                         buildingId = Codes.strToId[name]
                     else:

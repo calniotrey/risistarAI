@@ -15,6 +15,7 @@ class Config:
         self.activatePickingOfficers = None
         self.robotRatio = None
         self.robotStartingLevel = None
+        self.solarSatelliteStartingLevel = None
         self.customBuildOrdersDirectoryName = None
         self.customBuildOrdersPairingFile = None
         self.techsPickingOrderFile = None
@@ -74,6 +75,10 @@ class Config:
                         self.robotRatio = int(value)
                     elif key == "robotStartingLevel":
                         self.robotStartingLevel = int(value)
+                    elif key == "solarSatelliteStartingLevel":
+                        self.solarSatelliteStartingLevel = int(value)
+                    elif key == "maxSatelliteNumberPerCentrale":
+                        self.maxSatelliteNumberPerCentrale = int(value)
                     elif key == "customBuildOrdersDirectoryName":
                         self.customBuildOrdersDirectoryName = value
                     elif key == "customBuildOrdersPairingFile":

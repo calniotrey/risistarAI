@@ -24,6 +24,13 @@ robotRatio=3
 # Set it to 6 means that the robot factory will only be planned when your metal mine is level 6 or higher
 robotStartingLevel=0
 
+# Determine when the first solar satellite can be done based on the level of your centrale
+# Set it to 6 means that solar satellite will only be planned when your central is level 6 or higher
+solarSatelliteStartingLevel = 16
+
+# Determine the max number of satellite that can be built after reaching the required centrale level
+maxSatelliteNumberPerCentrale = 10
+
 ##Custom build order settings
 customBuildOrdersDirectoryName=buildOrders
 customBuildOrdersPairingFile=customBuildOrdersPairingFile.txt
