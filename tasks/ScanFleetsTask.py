@@ -47,8 +47,11 @@ class ScanFleetsTask(Task):
                         if targetPlanet.ships: #if there are some ships to send
                             try:
                                 targetPlanet.sendFleet(ia.config.escapeTarget, Fleet.transportCode, targetPlanet.ships, [0, 0, 0], speed=1, allRessources=True)
+                                targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
                             except:
                                 log(targetPlanet, "Error while sending the fleet for evasion")
+                        else:
+                            targetPlanet.scan()
                         targetPlanet.scanRessourcesUsingRequest(self.player.lastRequest)
                         gt = min(targetPlanet.metal//6000, targetPlanet.crystal//6000)
                         targetPlanet.buildShips({203:gt})
