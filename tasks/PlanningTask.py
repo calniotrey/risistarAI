@@ -20,21 +20,19 @@ class PlanningTask(Task):
             newTask = PlanningTask(self.planet.upgradingEnd, self.planet)
             self.planet.player.ia.addTask(newTask)
         else:
-            if self.planet.sizeUsed < self.planet.sizeMax:
+            if self.planet.canBuildSolarSatellites():
+                log(self.planet, "A solar satellite can be constructed")
+                self.planet.buildShips({212:1})
+                self.planet.getShipQueueTime()
+                log(self.planet, "Checking new building task in " + str(self.planet.shipQueueTime))
+                newTask = PlanningTask(time.time() + self.planet.shipQueueTime, self.planet)
+                self.planet.player.ia.addTask(newTask)
+            elif self.planet.sizeUsed < self.planet.sizeMax:
                 log(self.planet, "Planning building")
-                if self.planet.canBuildSolarSatellites():
+                newTask = self.planet.planBuilding()
+                if newTask is not None:
                     log(self.planet, "Done planning building")
-                    log(self.planet, "Building a solar satellite instead a building")
-                    self.planet.buildShips({212:1})
-                    self.planet.getShipQueueTime()
-                    log(self.planet, "Checking new building task in " + str(self.planet.shipQueueTime))
-                    newTask = PlanningTask(time.time() + self.planet.shipQueueTime, self.planet)
-                    self.planet.player.ia.addTask(newTask)
-                else:
-                    newTask = self.planet.planBuilding()
-                    if newTask is not None:
-                        log(self.planet, "Done planning building")
-                        log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
+                    log(self.planet, "Planning to build a " + newTask.bat.type + " to level " + str(newTask.bat.level + 1) + " in " + str(newTask.t - time.time()))
             else:
                 log(self.planet, "Planet filled ! Retrying in 10 minutes")
                 newTask = PlanningTask(time.time() + 600, self.planet)

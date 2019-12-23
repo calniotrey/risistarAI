@@ -62,7 +62,7 @@ class Planet:
     def canBuildSolarSatellites(self):
         centrale = self.buildingByType('Centrale éléctrique Solaire').level
         # If energy is positve there is no need to build solar satellite
-        if self.energy > 0:
+        if self.energy >= 0:
             return False
         # If required metal mine level is not reached, we don't build solar satellite
         if (centrale < self.player.ia.config.solarSatelliteStartingLevel):
@@ -75,7 +75,7 @@ class Planet:
             return False
         # If too many satellite alread have been constructed
         self.scanShips()
-        if 212 in self.ships and self.ships[212] > (centrale - self.player.ia.config.solarSatelliteStartingLevel + 1) * self.player.ia.config.maxSatelliteNumberPerCentrale:
+        if self.ships.get(212, 0) > (centrale - self.player.ia.config.solarSatelliteStartingLevel + 1) * self.player.ia.config.maxSatelliteNumberPerCentrale:
             return False
         # If all conditions are matched, we begin the production
         return True
@@ -89,10 +89,10 @@ class Planet:
         soup = BeautifulSoup(reqP.content, "html.parser")
         # parse the ship build queue time
         script = soup.find_all("script")[9].text
-        if "\"pretty_time_b_hangar\":\"" not in script:
+        if '"pretty_time_b_hangar":"' not in script:
             self.shipQueueTime = None
         else:
-            string = script.split("\"pretty_time_b_hangar\":\"")[1].split("\"};")[0]
+            string = script.split('"pretty_time_b_hangar":"')[1].split('"};')[0]
             split = string.split(" ")
             self.shipQueueTime = int(split[0].replace("h", "")) * 3600 + int(split[1].replace("m", "")) * 60 + int(split[2].replace("s", ""))
 

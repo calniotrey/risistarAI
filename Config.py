@@ -16,6 +16,7 @@ class Config:
         self.robotRatio = None
         self.robotStartingLevel = None
         self.solarSatelliteStartingLevel = None
+        self.maxSatelliteNumberPerCentrale = None
         self.customBuildOrdersDirectoryName = None
         self.customBuildOrdersPairingFile = None
         self.techsPickingOrderFile = None
