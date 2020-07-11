@@ -13,6 +13,7 @@ class Config:
         self.activateAutoExpedition = None
         self.activateAutoColonization = None
         self.activatePickingOfficers = None
+        self.activateAllianceScan = None
         self.robotRatio = None
         self.robotStartingLevel = None
         self.customBuildOrdersDirectoryName = None
@@ -27,6 +28,8 @@ class Config:
         self.minimumSpottingTime = None
         self.launchExpeditionSeparately = None
         self.officersPickingOrderFile = None
+        self.shrib = None
+        self.shribCookie = None
         self.watchdogDelay = None
         self.watchdogExceptionDelay = None
         self.watchdogEarlyDelay = None
@@ -71,6 +74,8 @@ class Config:
                         self.activateAutoColonization = value == "True"
                     elif key == "activatePickingOfficers":
                         self.activatePickingOfficers = value == "True"
+                    elif key == "activateAllianceScan":
+                        self.activateAllianceScan = value == "True"
                     elif key == "robotRatio":
                         self.robotRatio = int(value)
                     elif key == "robotStartingLevel":
@@ -99,6 +104,10 @@ class Config:
                         self.officersPickingOrderFile = value
                     elif key == "launchExpeditionSeparately":
                         self.launchExpeditionSeparately = value == "True"
+                    elif key == "shrib":
+                        self.shrib = value
+                    elif key == "shribCookie":
+                        self.shribCookie = value
                     elif key == "watchdogDelay":
                         self.watchdogDelay = int(value)
                     elif key == "watchdogExceptionDelay":
@@ -130,6 +139,10 @@ class Config:
             return "Defender ping is activated but the user id to ping isn't configurated !"
         if self.activatePickingOfficers and self.officersPickingOrderFile is None:
             return "Officer picking is activated but the order isn't configurated !"
+        if self.activateAllianceScan and (self.shrib is None or self.shribCookie is None):
+            return "You need to have a shrib and a cookie !"
+        if self.activateAllianceScan and not self.activateAutoFleetScan:
+            return "Alliance scan is activated but not auto fleet scan !"
         if self.watchdogDelay is None:
             return "watchdogDelay isn't defined"
         if self.watchdogDelay <= 0:

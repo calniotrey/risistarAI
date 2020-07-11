@@ -14,6 +14,7 @@ activateAutoEvasion=False
 activateAutoExpedition=False
 activateAutoColonization=False
 activatePickingOfficers=False
+activateAllianceScan=False
 
 ## AutoBuild Settings
 # Ratio that will determine the level of your robot factory based on the level of your metal mine.
@@ -54,6 +55,11 @@ launchExpeditionSeparately=True
 
 ##Getting Officers settings
 officersPickingOrderFile=officersPickingOrder.txt
+
+##Alliance scan
+#Put your url, but don't disclose it to anyone other than your alliance member
+shrib=AAAAAAAAAA
+shribCookie=AAAAAAAAAA
 
 ## Watchdog
 # The default delay in seconds between each reinitialization of the AI

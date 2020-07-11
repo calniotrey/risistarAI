@@ -2,6 +2,7 @@ import requests
 import os
 import heapq
 import math
+import random
 import re
 import sys
 import threading
@@ -51,6 +52,9 @@ class IA:
     battleRapportPage   = "https://" + domain + "/game.php?page=raport&raport="
     achievementsPage    = "https://" + domain + "/game.php?page=achievements"
     galaxyPage          = "https://" + domain + "/game.php?page=galaxy"
+    alliancePage        = "https://" + domain + "/game.php?page=alliance"
+    shribPage           = "https://shrib.com/zuex/api.php"
+    shribCookiePage     = "https://shrib.com/zuex/api."
 
     planetNameParser = re.compile(r'>(.*) \[(.*)\]')
     buildingNameParser = re.compile(r'\A([^\(]+)(?:\(.* (\d*))?')
@@ -60,6 +64,7 @@ class IA:
     deutProductionParser = re.compile(r'production: ((?:\d|\.)+),\s+valueElem: "current_deuterium"')
     ressourcesParser = re.compile(r'(\d+) (\w+);')
     energyParser = re.compile(r'(-?\d+)./.(\d+)')
+    shribParser = re.compile(r'"text":"(.*)","date_save"', re.DOTALL)
 
     def __init__(self, pseudo=None, password=None, lastCookie=None):
         self.watchdog = None
@@ -71,6 +76,7 @@ class IA:
         self.tasks = {}
         self.customBuildOrderDict = {}
         self._stop = False
+        self.lastShrib = ""
         self.initialize()
 
     def initialize(self):
@@ -90,6 +96,7 @@ class IA:
         self.tasks[Task.highPrio  ] = [] #evading ennemy fleet
         self.customBuildOrderDict = {}
         self._stop = False
+        self.lastShrib = ""
         self.addTask(CheckAchievementsTask(time.time(), self.player))
         if self.config.activateAutoBuild:
             self.loadCustomBuildOrders()
@@ -105,6 +112,10 @@ class IA:
             self.addTask(PickOfficerTask(time.time(), self.player))
         if self.config.activateAutoColonization:
             self.addTask(ColonizeTask(time.time(), self.player))
+        if self.config.activateAllianceScan: # get the cookie
+            url = self.shribCookiePage + str(random.random()) + ".svg"
+            req = Request(url, {})
+            req.connect(self.session)
 
     def loadCustomBuildOrders(self):
         buildOrderDirectory = os.path.join(os.path.dirname(os.path.abspath(IA._file)), self.config.customBuildOrdersDirectoryName)
@@ -237,6 +248,44 @@ class IA:
         data = {}
         data["content"] = "<@" + self.config.idToPing + "> " + message
         self.session.post(self.config.webhookUrl, data)
+
+    def retrieveShrib(self):
+        if not "guetsli" in self.session.cookies.keys():
+            self.session.cookies["guetsli"] = self.config.shribCookie
+        payload = { "action": "init", "l": "", "qll": "none", "note": self.config.shrib }
+        req = Request(self.shribPage, payload)
+        req.connect(self.session)
+        string = req.response.content.decode('unicode_escape')
+        self.lastShrib = self.shribParser.findall(string)[0]
+
+    def storeShrib(self, text):
+        if not "guetsli" in self.session.cookies.keys():
+            self.session.cookies["guetsli"] = self.config.shribCookie
+        payload = { "ssc": "1", "note": self.config.shrib, "text": text }
+        req = Request(self.shribPage, payload)
+        req.connect(self.session)
+        # print(req)
+
+    def decodeShrib(self):
+        """ First line pseudo of current scanner
+            Second line until when it scans
+            Third line when it will scan next
+            Fourth line and more : content of the scan"""
+        lines = self.lastShrib.splitlines()
+        if len(lines) < 4:
+            return None, None, None, None
+        pseudo = lines[0]
+        stopScan = lines[1]
+        nextScan = lines[2]
+        content = "".join(lines[3:])
+        return pseudo, float(stopScan), float(nextScan), content
+
+    def encodeShrib(self, pseudo, stopScan, nextScan, content):
+        """ First line pseudo of current scanner
+            Second line until when it scans
+            Third line when it will scan next
+            Fourth line and more : content of the scan"""
+        return "%s\n%s\n%s\n%s" % (pseudo, str(stopScan), str(nextScan), content)
 
     def simulateCombat(self, fleet1, fleet2, bonus1=[0, 0, 0], bonus2=[0, 0, 0], ressources=[0, 0, 0]):
         payload = {}

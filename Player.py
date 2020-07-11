@@ -82,14 +82,81 @@ class Player:
                     self.planets.append(pl)
                     pl.scan()
 
-    def getFleets(self):
-        techEspionageLevel = self.getTechLevel(106)
-        fleets = {}
+    def getFleets(self, page=None):
         overviewRequest = Request(self.ia.overviewPage, {})
         self.ia.execRequest(overviewRequest)
-        soup = BeautifulSoup(overviewRequest.response.content, "html.parser")
-        #parse all available buildings
+        self.getFleetsFromString(overviewRequest.response.content)
+
+    def getFleetsFromString(self, string):
+        techEspionageLevel = self.getTechLevel(106)
+        fleets = {}
+        soup = BeautifulSoup(string, "html.parser")
+        #parse all fleets
         fleetsTd = soup.find_all("td", class_="fleets")
+        for fleetTd in fleetsTd[::-1]: #invert the list so the smallest eta overrides the latest
+            etaStr = fleetTd.attrs["data-fleet-end-time"]
+            eta = float(etaStr)
+            id = fleetTd.attrs["id"].split(etaStr)[1] #The etaStr is appended at the end of the id
+            secondTd = fleetTd.parent.findAll("td")[1]
+            fleetsSpans = secondTd.findAll("span", recursive=False) #can be more than 1 if grouped attack
+            typeList = fleetsSpans[-1].attrs["class"] #the last one has the type
+            isGoing = (typeList[0] == "flight")
+            type = typeList[1]
+            aList = fleetsSpans[-1].findAll("a", class_=type)
+            ships = {}
+            for fleetSpan in fleetsSpans:
+                shipsA = fleetSpan.find("a", class_="tooltip")
+                if shipsA is not None and techEspionageLevel >= 8:
+                    shipsSoup = BeautifulSoup(shipsA.attrs["data-tooltip-content"], "html.parser")
+                    for tr in shipsSoup.findAll("tr"):
+                        tds = tr.findAll("td")
+                        shipType = Codes.strToId[tds[0].text[:-1]]
+                        shipAmount = int(tds[1].text.replace(".", ""))
+                        ships[shipType] = ships.get(shipType, 0) + shipAmount
+            aList = [a for a in aList if not "tooltip" in a.attrs["class"]]
+            originA = aList[0]
+            targetA = aList[1]
+            origin = [int(x) for x in originA.text[1:-1].split(":")]
+            if "Lune" in originA.previous:
+                origin.append(3)
+            elif "CDR" in originA.previous:
+                origin.append(2)
+            else:
+                origin.append(1)
+            target = [int(x) for x in targetA.text[1:-1].split(":")]
+            if "Lune" in targetA.previous:
+                target.append(3)
+            elif "CDR" in targetA.previous:
+                target.append(2)
+            else:
+                target.append(1)
+            fleet = Fleet(self, id, ships, origin, target, eta, type, isGoing)
+            ancientFleet = self.fleets.get(fleet.id)
+            if ancientFleet is not None:
+                fleet.firstSpotted = ancientFleet.firstSpotted
+            fleets[fleet.id] = fleet
+        self.fleets = fleets
+
+    def getFleetsFromStringFromAlliance(self, string):
+        techEspionageLevel = self.getTechLevel(106)
+        fleets = {}
+        soup = BeautifulSoup(string.replace("\\", ""), "html.parser")
+        #parse all fleets
+        table = soup.find_all("table", class_="table519")[0]
+        trs = table.find_all("tr", recursive=False)
+        currentPseudo = ""
+        currentThIndex = -1
+        fleetsTd = []
+        for tr in trs:
+            tds = tr.find_all("td", recursive=False)
+            ths = tr.find_all("th", recursive=False)
+            if len(ths):
+                currentThIndex += 1
+            if currentThIndex == 1: # if this is an "event" tr
+                if len(tds) == 1: # this is a pseudo
+                    currentPseudo = tds[0].text
+                elif len(tds) == 2 and currentPseudo == self.pseudo: # this is a fleet tr and it is concerning us
+                    fleetsTd.append(tds[0]) # yes it's hacky, but should work
         for fleetTd in fleetsTd[::-1]: #invert the list so the smallest eta overrides the latest
             etaStr = fleetTd.attrs["data-fleet-end-time"]
             eta = float(etaStr)

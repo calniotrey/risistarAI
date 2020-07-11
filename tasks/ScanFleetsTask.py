@@ -3,6 +3,7 @@ import time
 from tasks.Task import Task
 from tasks.SendExpeditionTask import SendExpeditionTask
 from Fleet import Fleet
+from Request import Request
 from UtilitiesFunctions import log
 
 class ScanFleetsTask(Task):
@@ -15,7 +16,35 @@ class ScanFleetsTask(Task):
 
     def execute(self):
         ia = self.player.ia #just to make the lines smaller
-        self.player.getFleets()
+        if ia.config.activateAllianceScan:
+            ia.retrieveShrib()
+            pseudo, stopScan, nextScan, content = ia.decodeShrib()
+            willLead = False
+            # if there is currently no one scanning
+            willLead = willLead or (pseudo is None)
+            # or it is us
+            willLead = willLead or (pseudo == self.player.pseudo)
+            # or it is someone else that wants to stop
+            willLead = willLead or (pseudo != self.player.pseudo and stopScan < time.time())
+            # or it is someone else that slept for too long (crash?)
+            willLead = willLead or (pseudo != self.player.pseudo and nextScan < time.time())
+            if  willLead: # We are the scanner => we should scan
+                if pseudo is None:
+                    log(None, "Shrib empty, we will take the scan lead")
+                elif pseudo == self.player.pseudo:
+                    log(None, "We are the alliance scanner for %s" % str(stopScan - time.time()))
+                elif pseudo != self.player.pseudo and stopScan < time.time():
+                    log(None, "Current scanner wants to stop, we will take the scan lead")
+                elif pseudo != self.player.pseudo and nextScan < time.time():
+                    log(None, "Current scanner didn't scan, we will take the scan lead")
+                allianceRequest = Request(ia.alliancePage, {})
+                ia.execRequest(allianceRequest)
+                self.player.getFleetsFromStringFromAlliance(allianceRequest.content)
+            else: # there was a scan (probably)
+                log(None, "We are getting scans from %s" % pseudo)
+                self.player.getFleetsFromStringFromAlliance(content)
+        else:
+            self.player.getFleets()
         log(None, "Scanned fleets")
         ennemyFleetInc = False
         discordMessageToSend = ""
@@ -86,4 +115,25 @@ class ScanFleetsTask(Task):
                 newExpeditionTask = SendExpeditionTask(time.time(), self.player)
                 ia.addTask(newExpeditionTask)
         newTask = ScanFleetsTask(time.time() + ia.config.minimumTimeBetweenScans, self.player)
+        if ia.config.activateAllianceScan:
+            pseudo, stopScan, nextScan, content = ia.decodeShrib()
+            willTakeLead = False
+            # if there is currently no one scanning
+            willTakeLead = willTakeLead or (pseudo is None)
+            # or it is someone else that wants to stop
+            willTakeLead = willTakeLead or (pseudo != self.player.pseudo and stopScan < time.time())
+            # or it is someone else that slept for too long (crash?)
+            willTakeLead = willTakeLead or (pseudo != self.player.pseudo and nextScan < time.time())
+            if willTakeLead: # we begin to scan for 2 to 6 hours
+                log(None, "We are taking the lead for scanning for the alliance")
+                ia.storeShrib(ia.encodeShrib(self.player.pseudo, time.time() + 4*3600*(0.5+random.random()), newTask.t, self.player.lastRequest.content))
+            elif (pseudo == self.player.pseudo) : # We are the scanner => we should publish
+                # even if we wanted to stop, we publish with the expired stopScan time
+                # that way if there are others that can scan, they will probably take the lead
+                # and if for some reason they can't, then we are still scanning for them
+                log(None, "Giving other members the scans")
+                ia.storeShrib(ia.encodeShrib(self.player.pseudo, stopScan, newTask.t, self.player.lastRequest.content))
+            else:
+                # someone else is scanning, we wait for their scan
+                newTask = ScanFleetsTask(nextScan + 30, self.player, randomAdditionnalWait=0)
         ia.addTask(newTask)
