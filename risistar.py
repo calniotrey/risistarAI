@@ -80,7 +80,7 @@ class IA:
             self.session.headers.update({'User-Agent': self.config.userAgent})
         if self.lastCookie is not None:
             self.changeCookie(self.lastCookie)
-        self.player = Player(self.pseudo, self.password, "Risistar", self)
+        self.player = Player(self.pseudo, self.password, "1", self)
         self.player.connexion()
         self.player.extractInfos(planets=True, darkMatter=True)
         self.player.scanTechs()

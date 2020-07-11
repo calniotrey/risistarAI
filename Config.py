@@ -32,6 +32,7 @@ class Config:
         self.watchdogEarlyDelay = None
         self.watchdogWakeDuration = None
 
+    @staticmethod
     def load():
         config = Config()
         config.loadFromFile("defaultConfig.txt")

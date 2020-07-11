@@ -41,6 +41,6 @@ class PickOrder:
             levelToGet = itemsAtThisStep.get(itemId, 0) + 1  #the level it should be after getting it
             itemsAtThisStep[itemId] = levelToGet
             currentItem = idToItem(itemId)
-            if currentItem is not None and levelToGet > currentItem.level:
+            if currentItem is None or levelToGet > currentItem.level:
                 return currentItem
         return None

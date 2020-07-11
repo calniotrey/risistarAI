@@ -56,7 +56,7 @@ class PickTechTask(Task):
                 # We need a bigger lab that isn't upgrading. So just wait for the next building to end.
                 nextBuildingTask = self.player.ia.getNextTaskOfType(PlanningTask)
                 if nextBuildingTask is None: # Shouldn't happen
-                    newTaskTime = time.time() + 30
+                    newTaskTime = time.time() + 90
                 else:
                     newTaskTime = nextBuildingTask.t + 1
                 newTask = PickTechTask(newTaskTime, self.player)

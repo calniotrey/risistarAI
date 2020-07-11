@@ -41,7 +41,7 @@ class ScanFleetsTask(Task):
                     targetPlanet.scanShips()
                     log(None, "Simulating combat")
                     rapport = self.player.ia.simulateCombat(fleet.ships, targetPlanet.ships) #TODO add defense
-                    if rapport.combatResult == 1 or (rapport.combatResult == 0 and not fleet.isDestroy()):
+                    if self.player.getTechLevel(106) < 8 or rapport.combatResult == 1 or (rapport.combatResult == 0 and not fleet.isDestroy()):
                         #if we (the defender) loose, or if it's a tie and it's not a moon destruction mission
                         log(None, "The incoming battle isn't in our favor, initiating evasion")
                         if targetPlanet.ships: #if there are some ships to send

@@ -148,7 +148,7 @@ class Planet:
         return buildingId
 
     def upgradableBuildings(self, ressources):
-        return [bat for bat in self.batimens if bat.upgradable(ressources)]
+        return [bat for bat in self.batiments if bat.upgradable(ressources)]
 
     def scan(self):
         reqB = Request(self.player.ia.buildingPage + "&cp=" + str(self.id), {})
